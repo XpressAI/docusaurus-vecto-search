@@ -372,13 +372,13 @@ function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
         {/* If title doesn't exist, but pageTitle does, display pageTitle prominently */}
         {pageTitle && (!title ? (
           <h2>
-            <Link to={url}>Page: {pageTitle}</Link>
+            <Link to={result.link}>Page: {pageTitle}</Link>
           </h2>
         ) : (
           <>
             <h5>{pageTitle}</h5>
             <h2>
-              <Link to={url}>{title}</Link>
+              <Link to={result.link}>{title}</Link>
             </h2>
           </>
         ))}
@@ -391,10 +391,10 @@ function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
         </p>
       )}
 
-      {/* Display data if it exists */}
+      {/* Display data if it exists and limit to 100 words */}
       {data && (
         <p style={{ fontStyle: 'italic' }}>
-          {data}
+          {data.split(" ").slice(0, 100).join(" ")}{data.split(" ").length > 100 ? "..." : ""}
         </p>
       )}
     </article>

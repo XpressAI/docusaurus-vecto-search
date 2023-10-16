@@ -43,6 +43,7 @@ export async function clearVectorSpace(vector_space_id: number, user_token: stri
 }
 
 export type VectoLookupResult = LookupResult & {
+    link: string;
     attributes: DocumentAttributes;
 };
 
@@ -71,7 +72,7 @@ export const vectoSearch = async (vector_space_id: number, public_token: string,
     }
 
     return (lookupResponse.results as VectoLookupResult[]).map(result => ({
-        link: "/docs/" + result.attributes.url + (result.attributes.hash ? `#${result.attributes.hash}` : ""),
+        link: result.attributes.url + (result.attributes.hash ? `${result.attributes.hash}` : ""),
         title: result.attributes.title,
         similarity: result.similarity,
         attributes: result.attributes
