@@ -33,20 +33,26 @@ export function postBuildFactory(
       // Use scanDocuments to get content and metadata
       const documentsLists = await scanDocuments(paths, config);
 
-      // [0] title [1] heading [2] content
-      const contentDocuments = documentsLists[2];
+       // [0] title [1] heading [2] content
+    const titleDocuments = documentsLists[0];
+    const headingDocuments = documentsLists[1];
+    const contentDocuments = documentsLists[2];
 
-      for (const doc of contentDocuments) {
-        const formattedData = {
+    for (const doc of contentDocuments) {
+      // Find the associated title and heading for the current content doc
+      const associatedTitleDoc = titleDocuments.find(titleDoc => titleDoc.i === doc.p);
+
+      const formattedData = {
+        data: doc.t, 
+        attributes: {
           data: doc.t, 
-          attributes: {
-            data: doc.t, 
-            title: doc.s,
-            url: doc.u,
-            hash: doc.h,
-          }
-        };
-
+          title: doc.s,
+          url: doc.u,
+          hash: doc.h,
+          pageTitle: associatedTitleDoc ? associatedTitleDoc.t : null,
+          breadcrumb: associatedTitleDoc ? associatedTitleDoc.b : null,
+        }
+      };
         // Call ingestToVecto with formatted data
         await ingestToVecto(vector_space_id, user_token, formattedData);
       }

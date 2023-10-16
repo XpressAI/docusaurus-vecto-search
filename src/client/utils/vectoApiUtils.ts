@@ -1,7 +1,7 @@
 import { Configuration, 
     IndexApi, IndexDataRequest, 
     UpdateApi, ClearVectorSpaceRequest,
-    LookupApi, LookupRequest } from 'vecto-sdk';
+    LookupApi, LookupRequest, LookupResult } from 'vecto-sdk';
 
 function createAPIInstance<T>(APIType: new (config: Configuration) => T, user_token: string): T {
   const config = new Configuration({
@@ -42,15 +42,20 @@ export async function clearVectorSpace(vector_space_id: number, user_token: stri
   }
 }
 
-export interface VectoSearchResult {
-    link: string;
-    title: string | undefined;
-    summary: string;
-    similarity?: number;
-    attributes: object;
-  }
+export type VectoLookupResult = LookupResult & {
+    attributes: DocumentAttributes;
+};
 
-export const vectoSearch = async (vector_space_id: number, public_token: string, top_k: number, query: string): Promise<VectoSearchResult[]> => {
+interface DocumentAttributes {
+    data: string;
+    title: string;
+    url: string;
+    hash: string;
+    pageTitle: string | null;
+    breadcrumb: [string] | null;
+}
+  
+export const vectoSearch = async (vector_space_id: number, public_token: string, top_k: number, query: string): Promise<VectoLookupResult[]> => {
     const api = createAPIInstance(LookupApi, public_token);
 
     const params: LookupRequest = {
@@ -65,11 +70,10 @@ export const vectoSearch = async (vector_space_id: number, public_token: string,
         throw new Error('Failed to perform lookup.');
     }
 
-    return lookupResponse.results?.map(result => ({
-        link: "/docs/" + result.id,
-        title: result.id?.toString(),
-        summary: JSON.stringify(result.attributes),
+    return (lookupResponse.results as VectoLookupResult[]).map(result => ({
+        link: "/docs/" + result.attributes.url + (result.attributes.hash ? `#${result.attributes.hash}` : ""),
+        title: result.attributes.title,
         similarity: result.similarity,
-        attributes: result.attributes as any 
+        attributes: result.attributes
     })) || [];
 };

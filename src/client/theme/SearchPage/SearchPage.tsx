@@ -23,7 +23,7 @@ import {
 } from "../../utils/proxiedGenerated";
 
 import styles from "./SearchPage.module.css";
-import { vectoSearch, VectoSearchResult } from "../../utils/vectoApiUtils";
+import { vectoSearch, VectoLookupResult } from "../../utils/vectoApiUtils";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -52,15 +52,6 @@ function SearchPageContent(): React.ReactElement {
   const public_token = configValues.public_token;
   const top_k = configValues.top_k;
 
-
-  console.log('Vector Space ID:', vector_space_id);
-  console.log('Public Token:', public_token);
-
-  console.log('Docusaurus Context:', context);
-  console.log('vectorSpaceId:', vector_space_id);
-  console.log('publicToken:', public_token);
-  console.log('topK:', top_k);
-
   const vectorSpaceId: number = vector_space_id as number;
   const publicToken: string = public_token as string;
   const topK: number = top_k as number;
@@ -80,7 +71,7 @@ function SearchPageContent(): React.ReactElement {
     >();
   const [searchResults, setSearchResults] = useState<SearchResult[]>();
   const versionUrl = `${baseUrl}${searchVersion}`;
-  const [vectoSearchResults, setVectoSearchResults] = useState<VectoSearchResult[]>([]);
+  const [vectoSearchResults, setVectoSearchResults] = useState<VectoLookupResult[]>([]);
   const [isLoadingVectoResults, setIsLoadingVectoResults] = useState(false);
 
   const pageTitle = useMemo(
@@ -250,6 +241,7 @@ function SearchPageContent(): React.ReactElement {
           </section>
         )}
 
+        <h2>Key Based Search Results</h2>
 
         {!searchSource && searchQuery && (
           <div>
@@ -362,26 +354,48 @@ function SearchResultItem({
 
 
 
-function VectoSearchResultItem({ result }: { result: VectoSearchResult }) {
+function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
+  const { breadcrumb, title, pageTitle, url, data } = result.attributes;
+
   return (
     <article className={styles.searchResultItem}>
-      <h2>
-        <Link to={result.link}>
-          {result.title}
-        </Link>
-      </h2>
-      <p className={styles.searchResultItemSummary}>
-        {result.summary}
-      </p>
-      {result.similarity && (
-        <p className={styles.searchResultItemSimilarity}>
-          Similarity: {result.similarity}
+      
+      {/* Display breadcrumbs if they exist */}
+      {breadcrumb && breadcrumb.length > 0 && (
+        <p className={styles.searchResultItemPath}>
+          {concatDocumentPath(breadcrumb)}
         </p>
       )}
-      {result.attributes && (
-        <div className={styles.searchResultItemAttributes}>
-          Attributes: <pre>{JSON.stringify(result.attributes, null, 2)}</pre>
-        </div>
+
+      <div>
+        {/* If both title and pageTitle exist, display pageTitle smaller and title prominently */}
+        {/* If title doesn't exist, but pageTitle does, display pageTitle prominently */}
+        {pageTitle && (!title ? (
+          <h2>
+            <Link to={url}>Page: {pageTitle}</Link>
+          </h2>
+        ) : (
+          <>
+            <h5>{pageTitle}</h5>
+            <h2>
+              <Link to={url}>{title}</Link>
+            </h2>
+          </>
+        ))}
+      </div>
+
+      {/* Display similarity score if it exists */}
+      {result.similarity && (
+        <p className={styles.searchResultItemSimilarity}>
+          Similarity: {result.similarity.toFixed(2)}%
+        </p>
+      )}
+
+      {/* Display data if it exists */}
+      {data && (
+        <p style={{ fontStyle: 'italic' }}>
+          {data}
+        </p>
       )}
     </article>
   );
