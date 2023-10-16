@@ -46,6 +46,10 @@ const schema = Joi.object<PluginOptions>({
   searchContextByPaths: Joi.array().items(Joi.string()),
   hideSearchBarWithNoSearchContext: Joi.boolean().default(false),
   useAllContextsWithNoSearchContext: Joi.boolean().default(false),
+  user_token: Joi.string(),
+  public_token: Joi.string(),
+  vector_space_id: Joi.number(),
+  top_k: Joi.number().default(10)
 });
 
 export function validateOptions({

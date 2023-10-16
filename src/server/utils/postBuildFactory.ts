@@ -10,6 +10,7 @@ import { buildIndex } from "./buildIndex";
 import { debugInfo } from "./debug";
 import { processDocInfos } from "./processDocInfos";
 import { scanDocuments } from "./scanDocuments";
+import { ingestToVecto, clearVectorSpace } from "../../client/utils/vectoApiUtils";
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -18,9 +19,38 @@ export function postBuildFactory(
   searchIndexFilename: string
 ) {
   return async function postBuild(buildData: PostBuildData): Promise<void> {
+
+    const { vector_space_id, user_token } = config;
+
     debugInfo("gathering documents");
 
     const data = processDocInfos(buildData, config);
+
+    debugInfo("clearing vector space");
+    await clearVectorSpace(vector_space_id, user_token)
+
+    for (const { paths } of data) {
+      // Use scanDocuments to get content and metadata
+      const documentsLists = await scanDocuments(paths, config);
+
+      // [0] title [1] heading [2] content
+      const contentDocuments = documentsLists[2];
+
+      for (const doc of contentDocuments) {
+        const formattedData = {
+          data: doc.t, 
+          attributes: {
+            data: doc.t, 
+            title: doc.s,
+            url: doc.u,
+            hash: doc.h,
+          }
+        };
+
+        // Call ingestToVecto with formatted data
+        await ingestToVecto(vector_space_id, user_token, formattedData);
+      }
+    }
 
     debugInfo("parsing documents");
 

@@ -189,4 +189,29 @@ export interface PluginOptions {
    * @default false
    */
   useAllContextsWithNoSearchContext?: boolean;
+
+    /**
+   * Vecto vector space ID.
+   */
+    vector_space_id?: number;
+
+    /**
+     * Vecto user token. Used to clear and index vector space. 
+     */
+    user_token?: string;
+  
+    /**
+     * Vecto public token. Used for searches.
+     */
+    public_token?: string;
+      /**
+     * Number of vecto search return results.
+     */
+
+    /**
+     * Number of vecto search return results.
+     *
+     * @default 10
+     */
+    top_k?: number;
 }
