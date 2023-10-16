@@ -1,4 +1,7 @@
-import { ClearVectorSpaceRequest, Configuration, IndexApi, IndexDataRequest, UpdateApi } from 'vecto-sdk';
+import { Configuration, 
+    IndexApi, IndexDataRequest, 
+    UpdateApi, ClearVectorSpaceRequest,
+    LookupApi, LookupRequest } from 'vecto-sdk';
 
 function createAPIInstance<T>(APIType: new (config: Configuration) => T, user_token: string): T {
   const config = new Configuration({
@@ -38,3 +41,35 @@ export async function clearVectorSpace(vector_space_id: number, user_token: stri
     throw new Error('Failed to clear vector space.');
   }
 }
+
+export interface VectoSearchResult {
+    link: string;
+    title: string | undefined;
+    summary: string;
+    similarity?: number;
+    attributes: object;
+  }
+
+export const vectoSearch = async (vector_space_id: number, public_token: string, top_k: number, query: string): Promise<VectoSearchResult[]> => {
+    const api = createAPIInstance(LookupApi, public_token);
+
+    const params: LookupRequest = {
+        vectorSpaceId: vector_space_id,
+        modality: 'TEXT',
+        topK: top_k,
+        query: query
+    };
+
+    const lookupResponse = await api.lookup(params);
+    if (!lookupResponse) {
+        throw new Error('Failed to perform lookup.');
+    }
+
+    return lookupResponse.results?.map(result => ({
+        link: "/docs/" + result.id,
+        title: result.id?.toString(),
+        summary: JSON.stringify(result.attributes),
+        similarity: result.similarity,
+        attributes: result.attributes as any 
+    })) || [];
+};

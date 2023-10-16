@@ -23,6 +23,7 @@ import {
 } from "../../utils/proxiedGenerated";
 
 import styles from "./SearchPage.module.css";
+import { vectoSearch, VectoSearchResult } from "../../utils/vectoApiUtils";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -36,7 +37,34 @@ function SearchPageContent(): React.ReactElement {
   const {
     siteConfig: { baseUrl },
   } = useDocusaurusContext();
+  const context = useDocusaurusContext();
 
+  interface VectoPluginOptions {
+    public_token?: string;
+    vector_space_id?: number;
+    top_k?: number;
+    [key: string]: any; // To allow for other unexpected properties
+  }
+
+  const themeTuple = context.siteConfig.themes[0] as VectoPluginOptions;
+  const configValues = themeTuple[1];
+  const vector_space_id = configValues.vector_space_id;
+  const public_token = configValues.public_token;
+  const top_k = configValues.top_k;
+
+
+  console.log('Vector Space ID:', vector_space_id);
+  console.log('Public Token:', public_token);
+
+  console.log('Docusaurus Context:', context);
+  console.log('vectorSpaceId:', vector_space_id);
+  console.log('publicToken:', public_token);
+  console.log('topK:', top_k);
+
+  const vectorSpaceId: number = vector_space_id as number;
+  const publicToken: string = public_token as string;
+  const topK: number = top_k as number;
+  
   const { selectMessage } = usePluralForm();
   const {
     searchValue,
@@ -52,6 +80,8 @@ function SearchPageContent(): React.ReactElement {
     >();
   const [searchResults, setSearchResults] = useState<SearchResult[]>();
   const versionUrl = `${baseUrl}${searchVersion}`;
+  const [vectoSearchResults, setVectoSearchResults] = useState<VectoSearchResult[]>([]);
+  const [isLoadingVectoResults, setIsLoadingVectoResults] = useState(false);
 
   const pageTitle = useMemo(
     () =>
@@ -98,6 +128,28 @@ function SearchPageContent(): React.ReactElement {
     []
   );
 
+  const handleSearchInputKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        handleVectoSearch();
+      }
+    },
+    [searchQuery]
+  );
+  
+  const handleVectoSearch = useCallback(async () => {
+    setIsLoadingVectoResults(true);
+  
+    try {
+      const results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      setVectoSearchResults(results);
+    } catch (error) {
+      console.error('Error fetching Vecto search results:', error);
+    } finally {
+      setIsLoadingVectoResults(false);
+    }
+  }, [searchQuery]);
+  
   useEffect(() => {
     if (searchValue && searchValue !== searchQuery) {
       setSearchQuery(searchValue);
@@ -148,6 +200,7 @@ function SearchPageContent(): React.ReactElement {
               value={searchQuery}
               autoComplete="off"
               autoFocus
+              onKeyPress={handleSearchInputKeyPress}
             />
           </div>
           {Array.isArray(searchContextByPaths) ? (
@@ -183,6 +236,20 @@ function SearchPageContent(): React.ReactElement {
             </div>
           ) : null}
         </div>
+
+        {isLoadingVectoResults ? (
+          <div>
+            <LoadingRing />
+          </div>
+        ) : vectoSearchResults.length > 0 && (
+          <section>
+            <h2>Vecto Search Results</h2>
+            {vectoSearchResults.map((result, index) => (
+              <VectoSearchResultItem key={index} result={result} />
+            ))}
+          </section>
+        )}
+
 
         {!searchSource && searchQuery && (
           <div>
@@ -288,6 +355,33 @@ function SearchResultItem({
             ),
           }}
         />
+      )}
+    </article>
+  );
+}
+
+
+
+function VectoSearchResultItem({ result }: { result: VectoSearchResult }) {
+  return (
+    <article className={styles.searchResultItem}>
+      <h2>
+        <Link to={result.link}>
+          {result.title}
+        </Link>
+      </h2>
+      <p className={styles.searchResultItemSummary}>
+        {result.summary}
+      </p>
+      {result.similarity && (
+        <p className={styles.searchResultItemSimilarity}>
+          Similarity: {result.similarity}
+        </p>
+      )}
+      {result.attributes && (
+        <div className={styles.searchResultItemAttributes}>
+          Attributes: <pre>{JSON.stringify(result.attributes, null, 2)}</pre>
+        </div>
       )}
     </article>
   );
