@@ -95,9 +95,24 @@ function SearchPageContent(): React.ReactElement {
     [searchQuery]
   );
 
+  const handleVectoSearch = useCallback(async () => {
+    setIsLoadingVectoResults(true);
+  
+    try {
+      let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      results = aggregateByURL(results)
+      setVectoSearchResults(results);
+    } catch (error) {
+      console.error('Error fetching Vecto search results:', error);
+    } finally {
+      setIsLoadingVectoResults(false);
+    }
+  }, [searchQuery]);
+  
   useEffect(() => {
     updateSearchPath(searchQuery);
 
+    // Existing Key-based Search Logic
     if (searchSource) {
       if (searchQuery) {
         searchSource(searchQuery, (results) => {
@@ -108,9 +123,15 @@ function SearchPageContent(): React.ReactElement {
       }
     }
 
+    // Call Vecto Search
+    if (searchQuery) {
+      handleVectoSearch();
+    }
+
     // `updateSearchPath` should not be in the deps,
     // otherwise will cause call stack overflow.
-  }, [searchQuery, searchSource]);
+  }, [searchQuery, searchSource, handleVectoSearch]);
+
 
   const handleSearchInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,19 +149,6 @@ function SearchPageContent(): React.ReactElement {
     [searchQuery]
   );
   
-  const handleVectoSearch = useCallback(async () => {
-    setIsLoadingVectoResults(true);
-  
-    try {
-      let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
-      results = aggregateByURL(results)
-      setVectoSearchResults(results);
-    } catch (error) {
-      console.error('Error fetching Vecto search results:', error);
-    } finally {
-      setIsLoadingVectoResults(false);
-    }
-  }, [searchQuery]);
   
   useEffect(() => {
     if (searchValue && searchValue !== searchQuery) {
