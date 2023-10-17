@@ -45,6 +45,7 @@ export async function clearVectorSpace(vector_space_id: number, user_token: stri
 export type VectoLookupResult = LookupResult & {
     link: string;
     attributes: DocumentAttributes;
+    title: string;
 };
 
 interface DocumentAttributes {
@@ -72,9 +73,44 @@ export const vectoSearch = async (vector_space_id: number, public_token: string,
     }
 
     return (lookupResponse.results as VectoLookupResult[]).map(result => ({
+        id: result.id,
         link: result.attributes.url + (result.attributes.hash ? `${result.attributes.hash}` : ""),
         title: result.attributes.title,
         similarity: result.similarity,
         attributes: result.attributes
     })) || [];
+};
+
+
+export const aggregateByURL = (results: VectoLookupResult[]): VectoLookupResult[] => {
+  // Group by URL and average the similarity scores
+  const urlGroups: { [url: string]: VectoLookupResult[] } = {};
+  results.forEach(result => {
+      if (urlGroups[result.attributes.url]) {
+          urlGroups[result.attributes.url].push(result);
+      } else {
+          urlGroups[result.attributes.url] = [result];
+      }
+  });
+
+  const aggregatedResults = Object.values(urlGroups).map(group => {
+      // Calculate the average similarity
+      const avgSimilarity = group.reduce((sum, result) => sum + (result.similarity), 0) / group.length;
+      
+      // Find the result with the maximum similarity within the group
+      const maxSimilarityResult = group.reduce((prev, current) => 
+          (prev.similarity) > (current.similarity) ? prev : current
+      );
+
+      return {
+          id: maxSimilarityResult.id,
+          link: maxSimilarityResult.link,
+          title: maxSimilarityResult.attributes.title,
+          similarity: avgSimilarity,
+          attributes: maxSimilarityResult.attributes
+      };
+  });
+
+  // Sort the results by similarity in descending order
+  return aggregatedResults.sort((a, b) => (b.similarity) - (a.similarity));
 };

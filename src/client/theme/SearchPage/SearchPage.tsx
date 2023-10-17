@@ -23,7 +23,7 @@ import {
 } from "../../utils/proxiedGenerated";
 
 import styles from "./SearchPage.module.css";
-import { vectoSearch, VectoLookupResult } from "../../utils/vectoApiUtils";
+import { vectoSearch, VectoLookupResult, aggregateByURL } from "../../utils/vectoApiUtils";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -132,7 +132,8 @@ function SearchPageContent(): React.ReactElement {
     setIsLoadingVectoResults(true);
   
     try {
-      const results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      results = aggregateByURL(results)
       setVectoSearchResults(results);
     } catch (error) {
       console.error('Error fetching Vecto search results:', error);
