@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import Head from "@docusaurus/Head";
@@ -34,6 +34,8 @@ export default function SearchPage(): React.ReactElement {
 }
 
 function SearchPageContent(): React.ReactElement {
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const {
     siteConfig: { baseUrl },
   } = useDocusaurusContext();
@@ -108,7 +110,7 @@ function SearchPageContent(): React.ReactElement {
       setIsLoadingVectoResults(false);
     }
   }, [searchQuery]);
-  
+
   useEffect(() => {
     updateSearchPath(searchQuery);
 
@@ -121,11 +123,6 @@ function SearchPageContent(): React.ReactElement {
       } else {
         setSearchResults(undefined);
       }
-    }
-
-    // Call Vecto Search
-    if (searchQuery) {
-      handleVectoSearch();
     }
 
     // `updateSearchPath` should not be in the deps,
@@ -142,9 +139,6 @@ function SearchPageContent(): React.ReactElement {
 
   const handleSearchInputKeyPress = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        handleVectoSearch();
-      }
     },
     [searchQuery]
   );
@@ -168,6 +162,27 @@ function SearchPageContent(): React.ReactElement {
     }
     doFetchIndexes();
   }, [searchContext, versionUrl]);
+
+  useEffect(() => {
+    // Clear the previous timeout if there's any
+    if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If there's a search query, set a new timeout to call vecto search
+    if (searchQuery) {
+        searchTimeoutRef.current = setTimeout(() => {
+            handleVectoSearch();
+        }, 500); 
+    }
+
+    return () => {
+        // Clean up on component unmount or if effect runs again
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [searchQuery, handleVectoSearch]);
 
   return (
     <React.Fragment>
