@@ -146,3 +146,40 @@ export const groupAndCountByURL = (results: VectoLookupResult[]): VectoLookupRes
   // Sort the results by count in descending order
   return aggregatedResults.sort((a, b) => (b.count) - (a.count));
 };
+
+export const groupAndWeightedAverageByURL = (results: VectoLookupResult[]): VectoLookupResult[] => {
+  // Group by URL
+  const urlGroups: { [url: string]: VectoLookupResult[] } = {};
+  results.forEach(result => {
+    if (urlGroups[result.attributes.url]) {
+      urlGroups[result.attributes.url].push(result);
+    } else {
+      urlGroups[result.attributes.url] = [result];
+    }
+  });
+
+  const aggregatedResults = Object.values(urlGroups).map(group => {
+    // Calculate the weighted average similarity
+    const totalWeight = group.reduce((sum, result) => sum + result.similarity, 0);
+    const weightedSimilaritySum = group.reduce((sum, result) => sum + (result.similarity * result.similarity), 0);
+    
+    // Guard against division by zero
+    const weightedAvgSimilarity = totalWeight !== 0 ? weightedSimilaritySum / totalWeight : 0;
+
+    // Find the result with the maximum similarity within the group
+    const maxSimilarityResult = group.reduce((prev, current) => 
+      (prev.similarity) > (current.similarity) ? prev : current
+    );
+
+    return {
+      id: maxSimilarityResult.id,
+      link: maxSimilarityResult.link,
+      title: maxSimilarityResult.attributes.title,
+      similarity: weightedAvgSimilarity,
+      attributes: maxSimilarityResult.attributes
+    };
+  });
+
+  // Sort the results by weighted average similarity in descending order
+  return aggregatedResults.sort((a, b) => (b.similarity) - (a.similarity));
+};

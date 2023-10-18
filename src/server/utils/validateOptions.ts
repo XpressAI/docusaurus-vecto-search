@@ -50,7 +50,7 @@ const schema = Joi.object<PluginOptions>({
   public_token: Joi.string(),
   vector_space_id: Joi.number(),
   top_k: Joi.number().default(10),
-  rankBy: Joi.string().valid("default", "average", "count").default("default"),
+  rankBy: Joi.string().valid("default", "average", "count", "weightedAverage").default("default"),
 });
 
 export function validateOptions({

@@ -23,7 +23,13 @@ import {
 } from "../../utils/proxiedGenerated";
 
 import styles from "./SearchPage.module.css";
-import { vectoSearch, VectoLookupResult, groupAndAverageByURL, groupAndCountByURL } from "../../utils/vectoApiUtils";
+import { 
+  vectoSearch, 
+  VectoLookupResult, 
+  groupAndAverageByURL, 
+  groupAndCountByURL,
+  groupAndWeightedAverageByURL,
+ } from "../../utils/vectoApiUtils";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -109,7 +115,9 @@ function SearchPageContent(): React.ReactElement {
         results = groupAndAverageByURL(results);
       } else if (rankBy === "count") {
           results = groupAndCountByURL(results);
-      }
+      } else if (rankBy === "weightedAverage") {
+        results = groupAndWeightedAverageByURL(results);
+    }
       setVectoSearchResults(results);
     } catch (error) {
       console.error('Error fetching Vecto search results:', error);

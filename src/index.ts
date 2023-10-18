@@ -221,5 +221,5 @@ export interface PluginOptions {
    *
    * @default "default"
    */
-  rankBy?: "default" | "average" | "count";
+  rankBy?: "default" | "average" | "count" | "weightedAverage";
 }
