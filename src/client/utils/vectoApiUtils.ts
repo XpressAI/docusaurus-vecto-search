@@ -43,9 +43,10 @@ export async function clearVectorSpace(vector_space_id: number, user_token: stri
 }
 
 export type VectoLookupResult = LookupResult & {
-    link: string;
     attributes: DocumentAttributes;
+    similarity: number;
     title: string;
+    link: string;
 };
 
 interface DocumentAttributes {
@@ -82,7 +83,7 @@ export const vectoSearch = async (vector_space_id: number, public_token: string,
 };
 
 
-export const aggregateByURL = (results: VectoLookupResult[]): VectoLookupResult[] => {
+export const groupAndAverageByURL = (results: VectoLookupResult[]): VectoLookupResult[] => {
   // Group by URL and average the similarity scores
   const urlGroups: { [url: string]: VectoLookupResult[] } = {};
   results.forEach(result => {
@@ -113,4 +114,35 @@ export const aggregateByURL = (results: VectoLookupResult[]): VectoLookupResult[
 
   // Sort the results by similarity in descending order
   return aggregatedResults.sort((a, b) => (b.similarity) - (a.similarity));
+};
+
+export const groupAndCountByURL = (results: VectoLookupResult[]): VectoLookupResult[] => {
+  // Group by URL
+  const urlGroups: { [url: string]: VectoLookupResult[] } = {};
+  results.forEach(result => {
+      if (urlGroups[result.attributes.url]) {
+          urlGroups[result.attributes.url].push(result);
+      } else {
+          urlGroups[result.attributes.url] = [result];
+      }
+  });
+
+  const aggregatedResults = Object.values(urlGroups).map(group => {
+      // Find the result with the maximum similarity within the group
+      const maxSimilarityResult = group.reduce((prev, current) => 
+          (prev.similarity) > (current.similarity) ? prev : current
+      );
+
+      return {
+          id: maxSimilarityResult.id,
+          link: maxSimilarityResult.link,
+          title: maxSimilarityResult.attributes.title,
+          similarity: maxSimilarityResult.similarity,
+          attributes: maxSimilarityResult.attributes,
+          count: group.length // store the count of how many times this URL appeared
+      };
+  });
+
+  // Sort the results by count in descending order
+  return aggregatedResults.sort((a, b) => (b.count) - (a.count));
 };

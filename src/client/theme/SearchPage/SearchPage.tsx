@@ -23,7 +23,7 @@ import {
 } from "../../utils/proxiedGenerated";
 
 import styles from "./SearchPage.module.css";
-import { vectoSearch, VectoLookupResult, aggregateByURL } from "../../utils/vectoApiUtils";
+import { vectoSearch, VectoLookupResult, groupAndAverageByURL, groupAndCountByURL } from "../../utils/vectoApiUtils";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -45,6 +45,7 @@ function SearchPageContent(): React.ReactElement {
     public_token?: string;
     vector_space_id?: number;
     top_k?: number;
+    rankBy?: string;
     [key: string]: any; // To allow for other unexpected properties
   }
 
@@ -53,6 +54,7 @@ function SearchPageContent(): React.ReactElement {
   const vector_space_id = configValues.vector_space_id;
   const public_token = configValues.public_token;
   const top_k = configValues.top_k;
+  const rankBy = configValues.rankBy;
 
   const vectorSpaceId: number = vector_space_id as number;
   const publicToken: string = public_token as string;
@@ -102,7 +104,12 @@ function SearchPageContent(): React.ReactElement {
   
     try {
       let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
-      results = aggregateByURL(results)
+      // Apply the correct function based on the rankBy
+      if (rankBy === "average") {
+        results = groupAndAverageByURL(results);
+      } else if (rankBy === "count") {
+          results = groupAndCountByURL(results);
+      }
       setVectoSearchResults(results);
     } catch (error) {
       console.error('Error fetching Vecto search results:', error);
@@ -410,8 +417,8 @@ function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
 
       {/* Display similarity score if it exists */}
       {result.similarity && (
-        <p className={styles.searchResultItemSimilarity}>
-          Similarity: {result.similarity.toFixed(2)}%
+        <p style={{ fontSize: '0.8rem', color: 'gray', fontStyle: 'italic'}}>
+              Search Score: {result.similarity.toFixed(2)}
         </p>
       )}
 

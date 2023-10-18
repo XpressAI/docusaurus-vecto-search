@@ -49,7 +49,8 @@ const schema = Joi.object<PluginOptions>({
   user_token: Joi.string(),
   public_token: Joi.string(),
   vector_space_id: Joi.number(),
-  top_k: Joi.number().default(10)
+  top_k: Joi.number().default(10),
+  rankBy: Joi.string().valid("default", "average", "count").default("default"),
 });
 
 export function validateOptions({
