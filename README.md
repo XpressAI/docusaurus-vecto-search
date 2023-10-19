@@ -52,7 +52,6 @@ themes: [
         "docusaurus-vecto-search",
         /** type {import("docusaurus-vecto-search").PluginOptions} */
         ({
-          user_token: "",
           public_token: "",
           vector_space_id: 123,
           top_k: 123
@@ -61,7 +60,17 @@ themes: [
 ]
 ```
 
-9. Finally, build your Docusaurus website with the new search configuration:
+## Environment Variables
+
+Create a `.env` file in the root of your Docusaurus project.
+
+\```bash
+USER_TOKEN=your_token_value_here
+\```
+
+This token will be utilized by the `docusaurus-vecto-search` for clearing and ingesting data. Unlike the `public_token`, the `USER_TOKEN` is private and should not be exposed.
+
+10. Finally, build your Docusaurus website with the new search configuration:
    ```bash
    yarn build
    ```
