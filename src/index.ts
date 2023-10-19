@@ -196,11 +196,6 @@ export interface PluginOptions {
   vector_space_id?: number;
 
   /**
-   * Vecto user token. Used to clear and index vector space. 
-   */
-  user_token?: string;
-
-  /**
    * Vecto public token. Used for searches.
    */
   public_token?: string;

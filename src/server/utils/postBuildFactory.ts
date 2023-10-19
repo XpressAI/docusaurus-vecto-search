@@ -11,6 +11,9 @@ import { debugInfo } from "./debug";
 import { processDocInfos } from "./processDocInfos";
 import { scanDocuments } from "./scanDocuments";
 import { ingestToVecto, clearVectorSpace } from "../../client/utils/vectoApiUtils";
+import dotenv from 'dotenv';
+dotenv.config();
+
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -20,7 +23,8 @@ export function postBuildFactory(
 ) {
   return async function postBuild(buildData: PostBuildData): Promise<void> {
 
-    const { vector_space_id, user_token } = config;
+    const user_token = process.env.USER_TOKEN as string;
+    const { vector_space_id } = config;
 
     debugInfo("gathering documents");
 
