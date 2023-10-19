@@ -60,14 +60,12 @@ themes: [
 ]
 ```
 
-## Environment Variables
+### Environment Variables
 
-Create a `.env` file in the root of your Docusaurus project.
-
-\```bash
-USER_TOKEN=your_token_value_here
-\```
-
+9. Create a `.env` file in the root of your Docusaurus project.
+   ```bash
+   USER_TOKEN=your_token_value_here
+   ```
 This token will be utilized by the `docusaurus-vecto-search` for clearing and ingesting data. Unlike the `public_token`, the `USER_TOKEN` is private and should not be exposed.
 
 10. Finally, build your Docusaurus website with the new search configuration:
