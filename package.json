@@ -1,8 +1,11 @@
 {
-  "name": "docusaurus-vecto-search",
+  "name": "@xpressai/docusaurus-vecto-search",
   "version": "0.0.1",
   "description": "Vecto search plugin for Docusaurus v2",
-  "repository": "https://github.com/XpressAI/docusaurus-vecto-search",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/XpressAI/docusaurus-vecto-search"
+  },
   "homepage": "https://github.com/XpressAI/docusaurus-vecto-search",
   "scripts": {
     "start": "concurrently -k -n client,server,types \"yarn run start:client\" \"yarn run start:server\" \"yarn run start:types\"",
@@ -33,6 +36,7 @@
     "@docusaurus/utils-validation": "^2.0.0-rc.1",
     "@easyops-cn/autocomplete.js": "^0.38.1",
     "@node-rs/jieba": "^1.6.0",
+    "@xpressai/vecto-client": "^0.0.7",
     "cheerio": "^1.0.0-rc.3",
     "clsx": "^1.1.1",
     "debug": "^4.2.0",

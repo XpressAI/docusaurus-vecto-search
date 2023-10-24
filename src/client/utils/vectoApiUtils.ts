@@ -1,7 +1,7 @@
 import { Configuration, 
     IndexApi, IndexDataRequest, 
     UpdateApi, ClearVectorSpaceRequest,
-    LookupApi, LookupRequest, LookupResult } from 'vecto-sdk';
+    LookupApi, LookupRequest, LookupResult } from '@xpressai/vecto-client';
 
 function createAPIInstance<T>(APIType: new (config: Configuration) => T, user_token: string): T {
   const config = new Configuration({
