@@ -32,23 +32,40 @@ themes: [
         "docusaurus-vecto-search",
         /** type {import("docusaurus-vecto-search").PluginOptions} */
         ({
-          public_token: "",
+          vecto_public_token: "",
           vector_space_id: 123,
-          top_k: 123
+          top_k: 15
         }),
       ],
 ]
 ```
+Alternatively, you can also set your config to fetch Vecto vars from your ENV using `process.env`, ie `vecto_public_token = process.env.vecto_public_token`.
 
 For the token, sign up for your access [here](https://www.vecto.ai/contactus).
 
-### 3) Add Environment Variables
+### 3) Add Vecto User Token To Environment Variables
 
-Create a `.env` file in the root of your Docusaurus project.
-   ```bash
-   USER_TOKEN=your_token_value_here
-   ```
-This token will be utilized by the `docusaurus-vecto-search` for clearing and ingesting data. Unlike the `public_token`, the `USER_TOKEN` is private and should not be exposed.
+You'll need to set the `VECTO_USER_TOKEN` environment variable for the `docusaurus-vecto-search` plugin to function properly. This token is private and is not exposed during the Docusaurus build process as it is not added in the docusaurus config.
+
+#### For CI/CD (e.g., GitHub Actions)
+
+If you are deploying your Docusaurus site using a CI/CD service like GitHub Actions, set `VECTO_USER_TOKEN` as an environment variable in your workflow configuration. You can use repository secrets to securely store the token.
+
+#### For Local Development
+
+For local development, you can export the `VECTO_USER_TOKEN` in your terminal:
+
+```bash
+export VECTO_USER_TOKEN=your_token_value_here
+```
+
+Make sure to replace your_token_value_here with your actual Vecto user token.
+
+Alternatively, you can create a `.env` file in the root of your Docusaurus project and add the token there:
+```
+VECTO_USER_TOKEN=your_token_value_here
+```
+Using a .env file ensures that the token remains set between terminal sessions. Make sure to replace your_token_value_here with your actual Vecto user token.
 
 ### 4) Build!
 
@@ -63,35 +80,32 @@ That's it! Your Docusaurus website should now be set up with the `docusaurus-vec
 ## Local Plugin Development
 If you would like to modify the current Vecto Search plugin, here are the steps:
 
-1. Clone the repository:
+1. Clone and install the repository:
    ```bash
    git clone https://github.com/XpressAI/docusaurus-vecto-search
-   ```
-2. Move into the directory and install dependencies:
-   ```bash
    cd docusaurus-vecto-search
    yarn install
    ```
-3. Create a symbolic link for the project:
+2. Create a symbolic link for the project:
    ```bash
    yarn link
    ```
-4. In a different directory, create a new Docusaurus website (ensure you're using version 2.4.3 or newer).
+3. In a different directory, create a new Docusaurus website (ensure you're using version 2.4.3 or newer).
    ```bash
    yarn create docusaurus my-website
    ```
    You can also use an existing Docusaurus project, but ensure it's a recent version.
  
-5. Move into the Docusaurus project directory and install its dependencies:
+4. Move into the Docusaurus project directory and install its dependencies:
    ```bash
    cd my-website
    yarn install
    ```
-6. Link the previously linked `docusaurus-vecto-search` to this Docusaurus project:
+5. Link the previously linked `docusaurus-vecto-search` to this Docusaurus project:
    ```bash
    yarn link docusaurus-vecto-search
    ```
-7. Build the Docusaurus project:
+6. Build the Docusaurus project:
    ```bash
    yarn build
    ```

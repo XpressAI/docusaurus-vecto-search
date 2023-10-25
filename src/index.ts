@@ -198,7 +198,7 @@ export interface PluginOptions {
   /**
    * Vecto public token. Used for searches.
    */
-  public_token?: string;
+  vecto_public_token?: string;
 
   /**
    * Number of vecto search return results.

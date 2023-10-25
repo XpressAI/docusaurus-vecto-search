@@ -48,7 +48,7 @@ function SearchPageContent(): React.ReactElement {
   const context = useDocusaurusContext();
 
   interface VectoPluginOptions {
-    public_token?: string;
+    vecto_public_token?: string;
     vector_space_id?: number;
     top_k?: number;
     rankBy?: string;
@@ -58,12 +58,12 @@ function SearchPageContent(): React.ReactElement {
   const themeTuple = context.siteConfig.themes[0] as VectoPluginOptions;
   const configValues = themeTuple[1];
   const vector_space_id = configValues.vector_space_id;
-  const public_token = configValues.public_token;
+  const vecto_public_token = configValues.vecto_public_token;
   const top_k = configValues.top_k;
   const rankBy = configValues.rankBy;
 
   const vectorSpaceId: number = vector_space_id as number;
-  const publicToken: string = public_token as string;
+  const publicToken: string = vecto_public_token as string;
   const topK: number = top_k as number;
   
   const { selectMessage } = usePluralForm();

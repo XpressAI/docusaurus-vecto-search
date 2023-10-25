@@ -58,8 +58,8 @@ interface DocumentAttributes {
     breadcrumb: [string] | null;
 }
   
-export const vectoSearch = async (vector_space_id: number, public_token: string, top_k: number, query: string): Promise<VectoLookupResult[]> => {
-    const api = createAPIInstance(LookupApi, public_token);
+export const vectoSearch = async (vector_space_id: number, vecto_public_token: string, top_k: number, query: string): Promise<VectoLookupResult[]> => {
+    const api = createAPIInstance(LookupApi, vecto_public_token);
 
     const params: LookupRequest = {
         vectorSpaceId: vector_space_id,

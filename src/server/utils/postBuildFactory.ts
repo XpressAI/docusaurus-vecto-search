@@ -23,7 +23,7 @@ export function postBuildFactory(
 ) {
   return async function postBuild(buildData: PostBuildData): Promise<void> {
 
-    const user_token = process.env.USER_TOKEN as string;
+    const user_token = process.env.VECTO_USER_TOKEN as string;
     const { vector_space_id } = config;
 
     debugInfo("gathering documents");
