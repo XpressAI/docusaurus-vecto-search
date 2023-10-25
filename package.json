@@ -21,8 +21,7 @@
   "main": "dist/server/server/index.js",
   "typings": "dist/types/index.d.ts",
   "files": [
-    "/dist",
-    "!/dist/generated.js"
+    "dist"
   ],
   "engines": {
     "node": ">=12"
