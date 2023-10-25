@@ -47,7 +47,7 @@ export function SearchBox({ translations = {}, ...props }: SearchBoxProps) {
         className="DocSearch-Form"
         method="get"
         id="VectoSearchBox"
-        action="http://localhost:3000/search"
+        action="/search"
         onReset={onReset}
       >
         <label className="DocSearch-MagnifierLabel">
