@@ -1,6 +1,6 @@
 {
   "name": "@xpressai/docusaurus-vecto-search",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Vecto search plugin for Docusaurus v2",
   "repository": {
     "type": "git",
