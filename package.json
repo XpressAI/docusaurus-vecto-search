@@ -1,0 +1,61 @@
+{
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "yarn workspaces foreach --all --exclude website-multi-docs -vp run start",
+    "start:theme": "yarn workspace @easyops-cn/docusaurus-search-local run start",
+    "start:website": "yarn workspace website run start",
+    "build": "yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
+    "build:i18n": "cross-env BUILD_TYPE='i18n' yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
+    "build:preview": "cross-env BUILD_TYPE='preview' yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
+    "build:theme": "yarn workspace @easyops-cn/docusaurus-search-local run build",
+    "build:website": "yarn workspace website run build",
+    "build:website-multi-docs": "yarn workspace website-multi-docs run build",
+    "serve": "yarn workspace website run serve",
+    "serve:website-multi-docs": "yarn workspace website-multi-docs run serve",
+    "test": "cross-env NODE_ENV='test' jest",
+    "prepare": "husky install",
+    "lint-staged": "lint-staged"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.10",
+    "@babel/preset-env": "^7.17.0",
+    "@babel/preset-react": "^7.16.7",
+    "@babel/preset-typescript": "^7.16.7",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "babel-jest": "^28.1.0",
+    "cheerio": "^1.0.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.15.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-react": "^7.29.4",
+    "eslint-plugin-react-hooks": "^4.5.0",
+    "husky": "^8.0.1",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^28.1.0",
+    "jest-environment-jsdom": "^28.1.0",
+    "jest-matcher-utils": "^29.6.4",
+    "lint-staged": "^13.0.0",
+    "prettier": "^2.6.2",
+    "typescript": "~5.2.2"
+  },
+  "workspaces": [
+    "docusaurus-search-local",
+    "website",
+    "website-multi-docs"
+  ],
+  "packageManager": "yarn@4.0.1",
+  "resolutions": {
+    "@docusaurus/core": "3.7.0",
+    "@docusaurus/module-type-aliases": "3.7.0",
+    "@docusaurus/preset-classic": "3.7.0",
+    "@docusaurus/theme-classic": "3.7.0",
+    "@docusaurus/theme-common": "3.7.0",
+    "@docusaurus/plugin-content-docs": "3.7.0",
+    "@types/react": "19.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
