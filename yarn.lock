@@ -5143,9 +5143,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@easyops-cn/docusaurus-search-local@^workspace:*, @easyops-cn/docusaurus-search-local@workspace:*, @easyops-cn/docusaurus-search-local@workspace:docusaurus-search-local":
+"@xpressai/docusaurus-vecto-search@^workspace:*, @xpressai/docusaurus-vecto-search@workspace:*, @xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search":
   version: 0.0.0-use.local
-  resolution: "@easyops-cn/docusaurus-search-local@workspace:docusaurus-search-local"
+  resolution: "@xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search"
   dependencies:
     "@docusaurus/module-type-aliases": "npm:^3.0.0"
     "@docusaurus/plugin-content-docs": "npm:^2 || ^3"
@@ -19473,7 +19473,7 @@ __metadata:
     "@docusaurus/preset-classic": "npm:^3.7.0"
     "@docusaurus/theme-classic": "npm:^3.7.0"
     "@docusaurus/theme-common": "npm:^3.7.0"
-    "@easyops-cn/docusaurus-search-local": "^workspace:*"
+    "@xpressai/docusaurus-vecto-search": "^workspace:*"
     "@mdx-js/react": "npm:^3.1.0"
     clsx: "npm:^2.1.1"
     prism-react-renderer: "npm:^2.1.0"
@@ -19491,7 +19491,7 @@ __metadata:
     "@docusaurus/preset-classic": "npm:^3.7.0"
     "@docusaurus/theme-classic": "npm:^3.7.0"
     "@docusaurus/theme-common": "npm:^3.7.0"
-    "@easyops-cn/docusaurus-search-local": "workspace:*"
+    "@xpressai/docusaurus-vecto-search": "workspace:*"
     "@mdx-js/react": "npm:^3.1.0"
     clsx: "npm:^2.1.1"
     react: "npm:^19.0.0"

@@ -3,12 +3,12 @@
   "license": "MIT",
   "scripts": {
     "start": "yarn workspaces foreach --all --exclude website-multi-docs -vp run start",
-    "start:theme": "yarn workspace @easyops-cn/docusaurus-search-local run start",
+    "start:theme": "yarn workspace @xpressai/docusaurus-vecto-search run start",
     "start:website": "yarn workspace website run start",
     "build": "yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
     "build:i18n": "cross-env BUILD_TYPE='i18n' yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
     "build:preview": "cross-env BUILD_TYPE='preview' yarn workspaces foreach --all --exclude website-multi-docs -tvp run build",
-    "build:theme": "yarn workspace @easyops-cn/docusaurus-search-local run build",
+    "build:theme": "yarn workspace @xpressai/docusaurus-vecto-search run build",
     "build:website": "yarn workspace website run build",
     "build:website-multi-docs": "yarn workspace website-multi-docs run build",
     "serve": "yarn workspace website run serve",
@@ -41,7 +41,7 @@
     "typescript": "~5.2.2"
   },
   "workspaces": [
-    "docusaurus-search-local",
+    "docusaurus-vecto-search",
     "website",
     "website-multi-docs"
   ],

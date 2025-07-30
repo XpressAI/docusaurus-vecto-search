@@ -3,13 +3,13 @@ const buildType = process.env.BUILD_TYPE;
 module.exports = {
   title: "Docusaurus Search",
   tagline:
-    "An offline/local search example using @easyops-cn/docusaurus-search-local",
+    "An offline/local search example using @xpressai/docusaurus-vecto-search",
   url: "https://easyops-cn.github.io",
-  baseUrl: buildType === "preview" ? "/" : "/docusaurus-search-local/",
+  baseUrl: buildType === "preview" ? "/" : "/docusaurus-vecto-search/",
   onBrokenLinks: "throw",
   favicon: "img/favicon.ico",
   organizationName: "easyops-cn", // Usually your GitHub org/user name.
-  projectName: "docusaurus-search-local", // Usually your repo name.
+  projectName: "docusaurus-vecto-search", // Usually your repo name.
   i18n: {
     defaultLocale: "en",
     locales: ["en", ...(buildType === "i18n" ? ["zh-CN", "zh-TW"] : [])],
@@ -30,7 +30,7 @@ module.exports = {
         },
         { to: "blog", label: "Blog", position: "left" },
         {
-          href: "https://github.com/easyops-cn/docusaurus-search-local",
+          href: "https://github.com/XpressAi/docusaurus-vecto-search",
           label: "GitHub",
           position: "right",
         },
@@ -86,7 +86,7 @@ module.exports = {
             },
             {
               label: "GitHub",
-              href: "https://github.com/easyops-cn/docusaurus-search-local",
+              href: "https://github.com/XpressAi/docusaurus-vecto-search",
             },
           ],
         },
@@ -102,13 +102,13 @@ module.exports = {
           sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           editUrl:
-            "https://github.com/easyops-cn/docusaurus-search-local/edit/master/website/",
+            "https://github.com/XpressAi/docusaurus-vecto-search/edit/master/website/",
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-            "https://github.com/easyops-cn/docusaurus-search-local/edit/master/website/",
+            "https://github.com/XpressAi/docusaurus-vecto-search/edit/master/website/",
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -118,8 +118,8 @@ module.exports = {
   ],
   themes: [
     [
-      "@easyops-cn/docusaurus-search-local",
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      "@xpressai/docusaurus-vecto-search",
+      /** @type {import("@xpressai/docusaurus-vecto-search").PluginOptions} */
       ({
         hashed: true,
         language: ["en", "zh"],

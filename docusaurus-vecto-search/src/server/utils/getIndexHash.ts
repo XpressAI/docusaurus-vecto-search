@@ -48,7 +48,7 @@ export function getIndexHash(config: ProcessedPluginOptions): string | null {
       __dirname,
       "../../../../package.json"
     )).version;
-    debugInfo("using @easyops-cn/docusaurus-search-local v%s", pluginVersion);
+    debugInfo("using @xpressai/docusaurus-vecto-search v%s", pluginVersion);
     md5sum.update(pluginVersion, "utf8");
 
     for (const item of files) {

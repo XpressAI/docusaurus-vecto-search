@@ -7,7 +7,7 @@ import { processPluginOptions } from "./utils/processPluginOptions";
 import { postBuildFactory } from "./utils/postBuildFactory";
 import { generate } from "./utils/generate";
 
-const PLUGIN_NAME = "@easyops-cn/docusaurus-search-local";
+const PLUGIN_NAME = "@xpressai/docusaurus-vecto-search";
 
 export default function DocusaurusSearchLocalPlugin(
   context: DocusaurusContext,
