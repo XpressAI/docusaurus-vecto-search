@@ -176,6 +176,16 @@ html[data-theme="dark"] .noResultsIcon {
   text-decoration: underline;
 }
 
+.hitFooter .DocSearch-Logo {
+  margin-bottom: 0.25rem;
+}
+
+.hitFooter .DocSearch-Commands {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
 .cursor .hideAction > svg {
   display: block;
 }

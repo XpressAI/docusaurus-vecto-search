@@ -96,7 +96,7 @@ export interface PluginOptions {
   /**
    * Limit the search results.
    *
-   * @default 8
+   * @default 5
    */
   searchResultLimits?: number;
 

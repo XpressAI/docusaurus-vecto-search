@@ -39,6 +39,7 @@ import { parseKeymap, matchesKeymap, getKeymapHints } from "../../utils/keymap";
 import { isMacPlatform } from "../../utils/platform";
 
 import styles from "./SearchBar.module.css";
+import { getFooterLogoHTML } from "./FooterTemplate";
 
 async function fetchAutoCompleteJS(): Promise<any> {
   const autoCompleteModule = await import("@easyops-cn/autocomplete.js");
@@ -208,7 +209,7 @@ export default function SearchBar({
       } else {
         linkText = translate({
           id: "theme.SearchBar.seeAll",
-          message: "See all results",
+          message: "See more results by",
         });
       }
 
@@ -280,17 +281,19 @@ export default function SearchBar({
             suggestion: SuggestionTemplate,
             empty: EmptyTemplate,
             footer: ({ query, isEmpty }: any) => {
-              if (
-                isEmpty &&
-                (!searchContext || !useAllContextsWithNoSearchContext)
-              ) {
+              if (isEmpty && (!searchContext || !useAllContextsWithNoSearchContext)) {
                 return;
               }
-              const a = searchFooterLinkElement({ query, isEmpty });
-              const div = document.createElement("div");
-              div.className = styles.hitFooter;
-              div.appendChild(a);
-              return div;
+              const link = searchFooterLinkElement({ query, isEmpty });
+              const container = document.createElement("div");
+              container.className = styles.hitFooter;
+              container.appendChild(link);
+
+              const footerDiv = document.createElement("div");
+              footerDiv.innerHTML = getFooterLogoHTML();
+              container.appendChild(footerDiv);
+
+              return container;
             },
           },
         },
