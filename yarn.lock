@@ -5143,52 +5143,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xpressai/docusaurus-vecto-search@^workspace:*, @xpressai/docusaurus-vecto-search@workspace:*, @xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search":
-  version: 0.0.0-use.local
-  resolution: "@xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search"
-  dependencies:
-    "@docusaurus/module-type-aliases": "npm:^3.0.0"
-    "@docusaurus/plugin-content-docs": "npm:^2 || ^3"
-    "@docusaurus/theme-common": "npm:^3.0.0"
-    "@docusaurus/theme-translations": "npm:^2 || ^3"
-    "@docusaurus/tsconfig": "npm:3.0.0"
-    "@docusaurus/types": "npm:^3.0.0"
-    "@docusaurus/utils": "npm:^2 || ^3"
-    "@docusaurus/utils-common": "npm:^2 || ^3"
-    "@docusaurus/utils-validation": "npm:^2 || ^3"
-    "@easyops-cn/autocomplete.js": "npm:^0.38.1"
-    "@node-rs/jieba": "npm:^1.6.0"
-    "@types/cheerio": "npm:^0.22.31"
-    "@types/debug": "npm:^4.1.5"
-    "@types/fs-extra": "npm:^9.0.2"
-    "@types/jest": "npm:^28.0.0"
-    "@types/klaw-sync": "npm:^6.0.0"
-    "@types/lunr": "npm:^2.3.3"
-    "@types/node": "npm:^18.0.0"
-    "@types/react": "npm:^19.0.3"
-    "@types/react-helmet": "npm:^6.1.1"
-    "@types/react-router-dom": "npm:^5.1.6"
-    cheerio: "npm:^1.0.0"
-    clsx: "npm:^2.1.1"
-    comlink: "npm:^4.4.2"
-    concurrently: "npm:^7.0.0"
-    copyfiles: "npm:^2.4.0"
-    debug: "npm:^4.2.0"
-    fs-extra: "npm:^10.0.0"
-    klaw-sync: "npm:^6.0.0"
-    lunr: "npm:^2.3.9"
-    lunr-languages: "npm:^1.4.0"
-    mark.js: "npm:^8.11.1"
-    rimraf: "npm:^3.0.2"
-    tslib: "npm:^2.4.0"
-    typescript: "npm:~5.2.2"
-  peerDependencies:
-    "@docusaurus/theme-common": ^2 || ^3
-    react: ^16.14.0 || ^17 || ^18 || ^19
-    react-dom: ^16.14.0 || 17 || ^18 || ^19
-  languageName: unknown
-  linkType: soft
-
 "@eslint-community/eslint-utils@npm:^4.4.0":
   version: 4.4.0
   resolution: "@eslint-community/eslint-utils@npm:4.4.0"
@@ -7376,6 +7330,60 @@ __metadata:
     "@webassemblyjs/ast": "npm:1.14.1"
     "@xtuc/long": "npm:4.2.2"
   checksum: cef09aad2fcd291bfcf9efdae2ea1e961a1ba0f925d1d9dcdd8c746d32fbaf431b6d26a0241699c0e39f82139018aa720b4ceb84ac6f4c78f13072747480db69
+  languageName: node
+  linkType: hard
+
+"@xpressai/docusaurus-vecto-search@^workspace:*, @xpressai/docusaurus-vecto-search@workspace:*, @xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search":
+  version: 0.0.0-use.local
+  resolution: "@xpressai/docusaurus-vecto-search@workspace:docusaurus-vecto-search"
+  dependencies:
+    "@docusaurus/module-type-aliases": "npm:^3.0.0"
+    "@docusaurus/plugin-content-docs": "npm:^2 || ^3"
+    "@docusaurus/theme-common": "npm:^3.0.0"
+    "@docusaurus/theme-translations": "npm:^2 || ^3"
+    "@docusaurus/tsconfig": "npm:3.0.0"
+    "@docusaurus/types": "npm:^3.0.0"
+    "@docusaurus/utils": "npm:^2 || ^3"
+    "@docusaurus/utils-common": "npm:^2 || ^3"
+    "@docusaurus/utils-validation": "npm:^2 || ^3"
+    "@easyops-cn/autocomplete.js": "npm:^0.38.1"
+    "@node-rs/jieba": "npm:^1.6.0"
+    "@types/cheerio": "npm:^0.22.31"
+    "@types/debug": "npm:^4.1.5"
+    "@types/fs-extra": "npm:^9.0.2"
+    "@types/jest": "npm:^28.0.0"
+    "@types/klaw-sync": "npm:^6.0.0"
+    "@types/lunr": "npm:^2.3.3"
+    "@types/node": "npm:^18.0.0"
+    "@types/react": "npm:^19.0.3"
+    "@types/react-helmet": "npm:^6.1.1"
+    "@types/react-router-dom": "npm:^5.1.6"
+    "@xpressai/vecto-client": "npm:^0.0.7"
+    cheerio: "npm:^1.0.0"
+    clsx: "npm:^2.1.1"
+    comlink: "npm:^4.4.2"
+    concurrently: "npm:^7.0.0"
+    copyfiles: "npm:^2.4.0"
+    debug: "npm:^4.2.0"
+    fs-extra: "npm:^10.0.0"
+    klaw-sync: "npm:^6.0.0"
+    lunr: "npm:^2.3.9"
+    lunr-languages: "npm:^1.4.0"
+    mark.js: "npm:^8.11.1"
+    rimraf: "npm:^3.0.2"
+    tslib: "npm:^2.4.0"
+    typescript: "npm:~5.2.2"
+  peerDependencies:
+    "@docusaurus/theme-common": ^2 || ^3
+    react: ^16.14.0 || ^17 || ^18 || ^19
+    react-dom: ^16.14.0 || 17 || ^18 || ^19
+  languageName: unknown
+  linkType: soft
+
+"@xpressai/vecto-client@npm:^0.0.7":
+  version: 0.0.7
+  resolution: "@xpressai/vecto-client@npm:0.0.7"
+  checksum: e11e69c47281076cf691e48c5fe8d6de282e2693dd8e44e01f4417042a6e6d19f7d38d034e4705fb43f9d6f9e7c69d23b64c80368deaefdbf7dfc45ef97c006d
   languageName: node
   linkType: hard
 
@@ -19473,8 +19481,8 @@ __metadata:
     "@docusaurus/preset-classic": "npm:^3.7.0"
     "@docusaurus/theme-classic": "npm:^3.7.0"
     "@docusaurus/theme-common": "npm:^3.7.0"
-    "@xpressai/docusaurus-vecto-search": "^workspace:*"
     "@mdx-js/react": "npm:^3.1.0"
+    "@xpressai/docusaurus-vecto-search": "^workspace:*"
     clsx: "npm:^2.1.1"
     prism-react-renderer: "npm:^2.1.0"
     react: "npm:^19.0.0"
@@ -19491,8 +19499,8 @@ __metadata:
     "@docusaurus/preset-classic": "npm:^3.7.0"
     "@docusaurus/theme-classic": "npm:^3.7.0"
     "@docusaurus/theme-common": "npm:^3.7.0"
-    "@xpressai/docusaurus-vecto-search": "workspace:*"
     "@mdx-js/react": "npm:^3.1.0"
+    "@xpressai/docusaurus-vecto-search": "workspace:*"
     clsx: "npm:^2.1.1"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"

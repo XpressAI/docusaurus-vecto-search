@@ -34,7 +34,7 @@ const schema = Joi.object<PluginOptions>({
     .default([]),
   removeDefaultStemmer: Joi.boolean().default(false),
   highlightSearchTermsOnTargetPage: Joi.boolean().default(false),
-  searchResultLimits: Joi.number().default(8),
+  searchResultLimits: Joi.number().default(5),
   searchResultContextMaxLength: Joi.number().default(50),
   explicitSearchResultPath: Joi.boolean().default(false),
   ignoreFiles: isArrayOfStringsOrRegExpsOrStringOrRegExp.default([]),
