@@ -7365,6 +7365,7 @@ __metadata:
     concurrently: "npm:^7.0.0"
     copyfiles: "npm:^2.4.0"
     debug: "npm:^4.2.0"
+    dotenv: "npm:^16.3.1"
     fs-extra: "npm:^10.0.0"
     klaw-sync: "npm:^6.0.0"
     lunr: "npm:^2.3.9"
@@ -9900,6 +9901,13 @@ __metadata:
   dependencies:
     is-obj: "npm:^2.0.0"
   checksum: 1200a4f6f81151161b8526c37966d60738cf12619b0ed1f55be01bdb55790bf0a5cd1398b8f2c296dcc07d0a7c2dd0e650baf0b069c367e74bb5df2f6603aba0
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.3.1":
+  version: 16.6.1
+  resolution: "dotenv@npm:16.6.1"
+  checksum: 1d1897144344447ffe62aa1a6d664f4cd2e0784e0aff787eeeec1940ded32f8e4b5b506d665134fc87157baa086fce07ec6383970a2b6d2e7985beaed6a4cc14
   languageName: node
   linkType: hard
 
