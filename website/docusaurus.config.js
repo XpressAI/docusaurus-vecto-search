@@ -125,6 +125,10 @@ module.exports = {
         language: ["en", "zh"],
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
+        vecto_public_token: "123123",
+        vector_space_id: 123123,
+        top_k: 15,
+        rankBy: "weightedAverage" // recommended
       }),
     ],
   ],

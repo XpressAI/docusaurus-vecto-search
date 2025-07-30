@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import Head from "@docusaurus/Head";
@@ -28,6 +28,15 @@ import {
 import styles from "./SearchPage.module.css";
 import { normalizeContextByPath } from "../../utils/normalizeContextByPath";
 
+// Vecto imports
+import { 
+  vectoSearch, 
+  VectoLookupResult, 
+  groupAndAverageByURL, 
+  groupAndCountByURL,
+  groupAndWeightedAverageByURL,
+ } from "../../utils/vectoApiUtils";
+
 export default function SearchPage(): React.ReactElement {
   return (
     <Layout>
@@ -37,10 +46,67 @@ export default function SearchPage(): React.ReactElement {
 }
 
 function SearchPageContent(): React.ReactElement {
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const {
     siteConfig: { baseUrl },
     i18n: { currentLocale },
   } = useDocusaurusContext();
+  const context = useDocusaurusContext();
+
+  // Vecto configuration with error tracking
+  interface VectoPluginOptions {
+    vecto_public_token?: string;
+    vector_space_id?: number;
+    top_k?: number;
+    rankBy?: string;
+    [key: string]: any;
+  }
+
+  const [vectoConfigErrors, setVectoConfigErrors] = useState<string[]>([]);
+  const [vectoSearchError, setVectoSearchError] = useState<string | null>(null);
+  const [vectorSpaceId, setVectorSpaceId] = useState<number | undefined>();
+  const [publicToken, setPublicToken] = useState<string | undefined>();
+  const [topK, setTopK] = useState<number>(10);
+  const [rankBy, setRankBy] = useState<string>("average");
+
+  // Read Vecto configuration once on mount
+  useEffect(() => {
+    try {
+      const themeTuple = context.siteConfig.themes[0] as VectoPluginOptions;
+      const configValues = themeTuple?.[1];
+      
+      const errors: string[] = [];
+      
+      if (!configValues) {
+        errors.push("Vecto theme configuration not found");
+      } else {
+        if (!configValues.vector_space_id) {
+          errors.push("vector_space_id is missing from configuration");
+        } else {
+          setVectorSpaceId(configValues.vector_space_id);
+        }
+        
+        if (!configValues.vecto_public_token) {
+          errors.push("vecto_public_token is missing from configuration");
+        } else {
+          setPublicToken(configValues.vecto_public_token);
+        }
+        
+        if (configValues.top_k) {
+          setTopK(configValues.top_k);
+        }
+        
+        if (configValues.rankBy) {
+          setRankBy(configValues.rankBy);
+        }
+      }
+      
+      setVectoConfigErrors(errors);
+    } catch (error) {
+      setVectoConfigErrors([`Error reading Vecto configuration: ${error instanceof Error ? error.message : String(error)}`]);
+    }
+  }, [context.siteConfig.themes]);
 
   const { selectMessage } = usePluralForm();
   const {
@@ -53,6 +119,10 @@ function SearchPageContent(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState(searchValue);
   const [searchResults, setSearchResults] = useState<SearchResult[]>();
   const versionUrl = `${baseUrl}${searchVersion}`;
+
+  // Vecto search state
+  const [vectoSearchResults, setVectoSearchResults] = useState<VectoLookupResult[]>([]);
+  const [isLoadingVectoResults, setIsLoadingVectoResults] = useState(false);
 
   const pageTitle = useMemo(
     () =>
@@ -75,6 +145,33 @@ function SearchPageContent(): React.ReactElement {
     [searchQuery]
   );
 
+  // Vecto search handler with error handling
+  const handleVectoSearch = useCallback(async () => {
+    if (!vectorSpaceId || !publicToken || !searchQuery) return;
+    
+    setIsLoadingVectoResults(true);
+    setVectoSearchError(null);
+  
+    try {
+      let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      // Apply the correct function based on the rankBy
+      if (rankBy === "average") {
+        results = groupAndAverageByURL(results);
+      } else if (rankBy === "count") {
+          results = groupAndCountByURL(results);
+      } else if (rankBy === "weightedAverage") {
+        results = groupAndWeightedAverageByURL(results);
+      }
+      setVectoSearchResults(results);
+    } catch (error) {
+      console.error('Error fetching Vecto search results:', error);
+      setVectoSearchError(`Vecto search failed: ${error instanceof Error ? error.message : String(error)}`);
+      setVectoSearchResults([]);
+    } finally {
+      setIsLoadingVectoResults(false);
+    }
+  }, [searchQuery, vectorSpaceId, publicToken, topK, rankBy]);
+
   useEffect(() => {
     updateSearchPath(searchQuery);
 
@@ -95,6 +192,30 @@ function SearchPageContent(): React.ReactElement {
     // `updateSearchPath` should not be in the deps,
     // otherwise will cause call stack overflow.
   }, [searchQuery, versionUrl, searchContext]);
+
+  // Vecto search with debounce
+  useEffect(() => {
+    // Clear the previous timeout if there's any
+    if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If there's a search query, set a new timeout to call vecto search
+    if (searchQuery && vectorSpaceId && publicToken && vectoConfigErrors.length === 0) {
+        searchTimeoutRef.current = setTimeout(() => {
+            handleVectoSearch();
+        }, 500); 
+    } else {
+      setVectoSearchResults([]);
+    }
+
+    return () => {
+        // Clean up on component unmount or if effect runs again
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+    };
+  }, [searchQuery, handleVectoSearch, vectoConfigErrors.length]);
 
   const handleSearchInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,44 +319,111 @@ function SearchPageContent(): React.ReactElement {
           ) : null}
         </div>
 
-        {!searchWorkerReady && searchQuery && (
-          <div>
-            <LoadingRing />
-          </div>
-        )}
-
-        {searchResults &&
-          (searchResults.length > 0 ? (
-            <p>
-              {selectMessage(
-                searchResults.length,
-                translate(
-                  {
-                    id: "theme.SearchPage.documentsFound.plurals",
-                    message: "1 document found|{count} documents found",
-                    description:
-                      'Pluralized label for "{count} documents found". Use as much plural forms (separated by "|") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)',
-                  },
-                  { count: searchResults.length }
-                )
-              )}
-            </p>
-          ) : process.env.NODE_ENV === "production" ? (
-            <p>
-              {translate({
-                id: "theme.SearchPage.noResultsText",
-                message: "No documents were found",
-                description: "The paragraph for empty search result",
-              })}
-            </p>
-          ) : (
-            <p>
-              ⚠️ The search index is only available when you run docusaurus
-              build!
-            </p>
-          ))}
-
+        {/* Vecto Search Results Section - Always displayed */}
         <section>
+          <h2>Vecto Search Results</h2>
+          
+          {/* Display configuration errors */}
+          {vectoConfigErrors.length > 0 && (
+            <div style={{ 
+              backgroundColor: '#ffebee', 
+              border: '1px solid #f44336', 
+              borderRadius: '4px', 
+              padding: '12px', 
+              marginBottom: '16px' 
+            }}>
+              <h4 style={{ color: '#d32f2f', margin: '0 0 8px 0' }}>⚠️ Vecto Configuration Errors:</h4>
+              <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                {vectoConfigErrors.map((error, index) => (
+                  <li key={index} style={{ color: '#d32f2f' }}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Display search errors */}
+          {vectoSearchError && (
+            <div style={{ 
+              backgroundColor: '#ffebee', 
+              border: '1px solid #f44336', 
+              borderRadius: '4px', 
+              padding: '12px', 
+              marginBottom: '16px' 
+            }}>
+              <h4 style={{ color: '#d32f2f', margin: '0 0 8px 0' }}>❌ Vecto Search Error:</h4>
+              <p style={{ color: '#d32f2f', margin: '0' }}>{vectoSearchError}</p>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {isLoadingVectoResults && vectoConfigErrors.length === 0 && (
+            <div>
+              <LoadingRing />
+            </div>
+          )}
+
+          {/* Search results */}
+          {vectoSearchResults.length > 0 && vectoConfigErrors.length === 0 && (
+            <>
+              {vectoSearchResults.map((result, index) => (
+                <VectoSearchResultItem key={index} result={result} />
+              ))}
+            </>
+          )}
+
+          {/* No results message when search is done but no results */}
+          {searchQuery && 
+           !isLoadingVectoResults && 
+           vectoSearchResults.length === 0 && 
+           vectoConfigErrors.length === 0 && 
+           !vectoSearchError && (
+            <p style={{ fontStyle: 'italic', color: '#666' }}>
+              No Vecto search results found for "{searchQuery}"
+            </p>
+          )}
+        </section>
+
+        {/* Original Search Results */}
+        <section>
+          <h2>Key Based Search Results</h2>
+
+          {!searchWorkerReady && searchQuery && (
+            <div>
+              <LoadingRing />
+            </div>
+          )}
+
+          {searchResults &&
+            (searchResults.length > 0 ? (
+              <p>
+                {selectMessage(
+                  searchResults.length,
+                  translate(
+                    {
+                      id: "theme.SearchPage.documentsFound.plurals",
+                      message: "1 document found|{count} documents found",
+                      description:
+                        'Pluralized label for "{count} documents found". Use as much plural forms (separated by "|") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)',
+                    },
+                    { count: searchResults.length }
+                  )
+                )}
+              </p>
+            ) : process.env.NODE_ENV === "production" ? (
+              <p>
+                {translate({
+                  id: "theme.SearchPage.noResultsText",
+                  message: "No documents were found",
+                  description: "The paragraph for empty search result",
+                })}
+              </p>
+            ) : (
+              <p>
+                ⚠️ The search index is only available when you run docusaurus
+                build!
+              </p>
+            ))}
+
           {searchResults &&
             searchResults.map((item) => (
               <SearchResultItem key={item.document.i} searchResult={item} />
@@ -309,6 +497,54 @@ function SearchResultItem({
             ),
           }}
         />
+      )}
+    </article>
+  );
+}
+
+// Vecto Search Result Item Component
+function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
+  const { breadcrumb, title, pageTitle, url, data } = result.attributes;
+
+  return (
+    <article className={styles.searchResultItem}>
+      
+      {/* Display breadcrumbs if they exist */}
+      {breadcrumb && breadcrumb.length > 0 && (
+        <p className={styles.searchResultItemPath}>
+          {concatDocumentPath(breadcrumb)}
+        </p>
+      )}
+
+      <div>
+        {/* If both title and pageTitle exist, display pageTitle smaller and title prominently */}
+        {/* If title doesn't exist, but pageTitle does, display pageTitle prominently */}
+        {pageTitle && (!title ? (
+          <h2>
+            <Link to={result.link}>Page: {pageTitle}</Link>
+          </h2>
+        ) : (
+          <>
+            <h5>{pageTitle}</h5>
+            <h2>
+              <Link to={result.link}>{title}</Link>
+            </h2>
+          </>
+        ))}
+      </div>
+
+      {/* Display similarity score if it exists */}
+      {result.similarity && (
+        <p style={{ fontSize: '0.8rem', color: 'gray', fontStyle: 'italic'}}>
+              Search Score: {result.similarity.toFixed(2)}
+        </p>
+      )}
+
+      {/* Display data if it exists and limit to 100 words */}
+      {data && (
+        <p style={{ fontStyle: 'italic' }}>
+          {data.split(" ").slice(0, 100).join(" ")}{data.split(" ").length > 100 ? "..." : ""}
+        </p>
       )}
     </article>
   );
