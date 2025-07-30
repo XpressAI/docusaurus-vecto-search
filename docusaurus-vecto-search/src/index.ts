@@ -221,4 +221,32 @@ export interface PluginOptions {
    * @default 1
    */
   fuzzyMatchingDistance?: number;
+
+  /**
+   * Vecto vector space ID.
+   */
+  vector_space_id?: number;
+
+  /**
+   * Vecto public token. Used for searches.
+   */
+  vecto_public_token?: string;
+
+  /**
+   * Number of vecto search return results.
+   *
+   * @default 10
+   */
+  top_k?: number;
+
+  /**
+   * Vecto search refinement algorithm. 
+   *
+   * "default" - Search results are returned without additional grouping.
+   * "average" - Search results are grouped by URL and ranked by the average score.
+   * "count" - Search results are grouped by URL and ranked by the count of the URL's appearance.
+   *
+   * @default "default"
+   */
+  rankBy?: "default" | "average" | "count" | "weightedAverage";
 }

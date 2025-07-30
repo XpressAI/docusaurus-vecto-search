@@ -129,7 +129,7 @@ describe("generate", () => {
         language,
         removeDefaultStopWordFilter: false,
         removeDefaultStemmer: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
         explicitSearchResultPath: false,
         searchBarShortcut: true,
@@ -157,7 +157,7 @@ describe("generate", () => {
         removeDefaultStopWordFilter: false,
         removeDefaultStemmer: false,
         highlightSearchTermsOnTargetPage: true,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
         explicitSearchResultPath: false,
       } as ProcessedPluginOptions,
@@ -176,7 +176,7 @@ describe("generate", () => {
         language: ["en"],
         removeDefaultStopWordFilter: false,
         searchBarShortcut: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
       } as ProcessedPluginOptions,
       "/tmp"
@@ -194,7 +194,7 @@ describe("generate", () => {
         language: ["en"],
         removeDefaultStopWordFilter: false,
         searchBarShortcutHint: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
       } as ProcessedPluginOptions,
       "/tmp"
@@ -211,7 +211,7 @@ describe("generate", () => {
       {
         language: ["en"],
         removeDefaultStopWordFilter: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
         docsPluginIdForPreferredVersion: "product",
       } as ProcessedPluginOptions,
@@ -231,7 +231,7 @@ describe("generate", () => {
       {
         language: ["en"],
         removeDefaultStopWordFilter: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
         hashed: "filename",
       } as ProcessedPluginOptions,
@@ -249,7 +249,7 @@ describe("generate", () => {
       {
         language: ["en"],
         removeDefaultStopWordFilter: false,
-        searchResultLimits: 5,
+        searchResultLimits: 8,
         searchResultContextMaxLength: 50,
         fuzzyMatchingDistance: 2,
       } as ProcessedPluginOptions,
