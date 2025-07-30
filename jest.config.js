@@ -4,11 +4,11 @@ module.exports = {
     "\\.[t|j]sx?$": "babel-jest",
   },
   clearMocks: true,
-  testMatch: ["**/docusaurus-search-local/src/**/?(*.)+(spec|test).[jt]s?(x)"],
+  testMatch: ["**/docusaurus-vecto-search/src/**/?(*.)+(spec|test).[jt]s?(x)"],
   testPathIgnorePatterns: ["/node_modules/", "/.yarn/", "<rootDir>/website/", "searchByWorker"],
   collectCoverage: true,
   coverageDirectory: "<rootDir>/.coverage",
-  collectCoverageFrom: ["docusaurus-search-local/src/**/*.{ts,tsx,js,jsx}", "!docusaurus-search-local/src/**/searchByWorker.*"],
+  collectCoverageFrom: ["docusaurus-vecto-search/src/**/*.{ts,tsx,js,jsx}", "!docusaurus-vecto-search/src/**/searchByWorker.*"],
   moduleNameMapper: {
     "\\.module\\.css$": require.resolve("identity-obj-proxy"),
     "@docusaurus/Translate": "<rootDir>/__mocks__/Translate.js",

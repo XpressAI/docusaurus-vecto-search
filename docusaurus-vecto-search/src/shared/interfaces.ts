@@ -1,6 +1,6 @@
 import { DocusaurusConfig, LoadedPlugin } from "@docusaurus/types";
 import lunr from "lunr";
-import { PluginOptions } from "../";
+import { PluginOptions } from "..";
 
 export type { PluginOptions };
 

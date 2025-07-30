@@ -1,6 +1,6 @@
 {
   "packages": {
-    "docusaurus-search-local": {}
+    "docusaurus-vecto-search": {}
   },
   "bump-minor-pre-major": true
 }

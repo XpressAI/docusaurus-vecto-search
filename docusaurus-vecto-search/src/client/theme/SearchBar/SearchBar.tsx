@@ -223,7 +223,7 @@ export default function SearchBar({
       if (versionUrl !== baseUrl) {
         if (!versionUrl.startsWith(baseUrl)) {
           throw new Error(
-            `Version url '${versionUrl}' does not start with base url '${baseUrl}', this is a bug of \`@easyops-cn/docusaurus-search-local\`, please report it.`
+            `Version url '${versionUrl}' does not start with base url '${baseUrl}', this is a bug of \`@xpressai/docusaurus-vecto-search\`, please report it.`
           );
         }
         params.set("version", versionUrl.substring(baseUrl.length));
@@ -339,7 +339,7 @@ export default function SearchBar({
       ? new URLSearchParams(location.search).getAll(SEARCH_PARAM_HIGHLIGHT)
       : [];
     // A workaround to fix an issue of highlighting in code blocks.
-    // See https://github.com/easyops-cn/docusaurus-search-local/issues/92
+    // See https://github.com/XpressAi/docusaurus-vecto-search/issues/92
     // Code blocks will be re-rendered after this `useEffect` ran.
     // So we make the marking run after a macro task.
     setTimeout(() => {

@@ -4,7 +4,7 @@ node_modules
 .vscode
 yarn-error.log
 
-/docusaurus-search-local/dist
+/docusaurus-vecto-search/dist
 /website/build
 /website-multi-docs/build
 

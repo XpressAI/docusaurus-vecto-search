@@ -1,13 +1,13 @@
 {
-  "name": "@easyops-cn/docusaurus-search-local",
+  "name": "@xpressai/docusaurus-vecto-search",
   "version": "0.52.1",
   "description": "An offline/local search plugin for Docusaurus v3",
   "repository": {
     "type": "git",
-    "url": "https://github.com/easyops-cn/docusaurus-search-local",
-    "directory": "packages/docusaurus-search-local"
+    "url": "https://github.com/XpressAi/docusaurus-vecto-search",
+    "directory": "packages/docusaurus-vecto-search"
   },
-  "homepage": "https://github.com/easyops-cn/docusaurus-search-local",
+  "homepage": "https://github.com/XpressAi/docusaurus-vecto-search",
   "scripts": {
     "start": "concurrently -k -n client,server,types \"yarn run start:client\" \"yarn run start:server\" \"yarn run start:types\"",
     "start:client": "tsc --watch --project tsconfig.client.json",

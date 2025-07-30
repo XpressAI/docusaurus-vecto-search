@@ -58,10 +58,10 @@ function Home() {
           <p className="hero__subtitle">
             An offline/local search example using{" "}
             <a
-              href="https://github.com/easyops-cn/docusaurus-search-local"
+              href="https://github.com/XpressAi/docusaurus-vecto-search"
               style={{ color: "var(--ifm-hero-text-color)" }}
             >
-              @easyops-cn/docusaurus-search-local
+              @xpressai/docusaurus-vecto-search
             </a>
             .
           </p>

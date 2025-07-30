@@ -149,8 +149,8 @@ const config = {
     }),
   themes: [
     [
-      require.resolve("@easyops-cn/docusaurus-search-local"),
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      require.resolve("@xpressai/docusaurus-vecto-search"),
+      /** @type {import("@xpressai/docusaurus-vecto-search").PluginOptions} */
       ({
         hashed: true,
         docsRouteBasePath: ["docs", "community"],
