@@ -4,11 +4,11 @@ module.exports = {
   title: "Docusaurus Search",
   tagline:
     "An offline/local search example using @xpressai/docusaurus-vecto-search",
-  url: "https://easyops-cn.github.io",
+  url: "https://docs.vecto.ai",
   baseUrl: buildType === "preview" ? "/" : "/docusaurus-vecto-search/",
   onBrokenLinks: "throw",
   favicon: "img/favicon.ico",
-  organizationName: "easyops-cn", // Usually your GitHub org/user name.
+  organizationName: "XpressAi", // Usually your GitHub org/user name.
   projectName: "docusaurus-vecto-search", // Usually your repo name.
   i18n: {
     defaultLocale: "en",
