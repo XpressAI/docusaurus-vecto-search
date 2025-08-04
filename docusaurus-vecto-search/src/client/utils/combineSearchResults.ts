@@ -1,6 +1,4 @@
-// docusaurus-vecto-search/src/client/utils/combineSearchResults.ts
-
-import { SearchResult, SearchDocumentType } from "../../shared/interfaces";
+import { SearchResult, SearchDocumentType, SearchDocument } from "../../shared/interfaces";
 import { VectoLookupResult } from "./vectoApiUtils";
 
 export interface CombinedSearchResult extends SearchResult {
@@ -9,30 +7,79 @@ export interface CombinedSearchResult extends SearchResult {
   vectorSimilarity?: number;
 }
 
-// Helper function to convert VectoLookupResult to proper SearchResult format
+// Helper function to convert VectoLookupResult to proper SearchResult format that matches autocomplete results
 function convertVectorResultToSearchResult(vectorResult: VectoLookupResult, index: number): CombinedSearchResult {
-  return {
+  console.log('🔄 Converting vector result to SearchResult:', {
+    url: vectorResult.attributes.url,
+    title: vectorResult.attributes.title,
+    hasHash: !!vectorResult.attributes.hash,
+    hasData: !!vectorResult.attributes.data,
+    hasBreadcrumb: !!vectorResult.attributes.breadcrumb,
+    dataLength: vectorResult.attributes.data?.length || 0
+  });
+
+  // Create a proper page object that matches what autocomplete results have
+  const mockPage: SearchDocument = {
+    i: index + 10000, // Use high number to avoid conflicts with real page indices
+    t: vectorResult.attributes.pageTitle || vectorResult.attributes.title || 'Untitled Page',
+    u: vectorResult.attributes.url,
+    h: '', // Page hash is usually empty for page objects
+    s: '', // Page summary - empty for vector results
+    b: vectorResult.attributes.breadcrumb || [],
+  };
+
+  // For vector results, we'll use Title type to avoid complex highlighting issues
+  // Title results are simpler and don't require complex metadata
+  const documentType = SearchDocumentType.Title;
+  const documentTitle = vectorResult.attributes.title || vectorResult.attributes.data?.substring(0, 100) || 'Untitled';
+  const documentSummary = vectorResult.attributes.data?.substring(0, 200) || '';
+
+  console.log('📋 Document details:', {
+    documentType,
+    documentTitle: documentTitle.substring(0, 50) + '...',
+    documentSummary: documentSummary.substring(0, 50) + '...'
+  });
+
+  // Empty tokens and metadata since vector search doesn't provide highlighting positions
+  const tokens: string[] = [];
+  const metadata = {}; // Empty metadata object
+
+  const searchResult: CombinedSearchResult = {
     document: {
-      i: index,
-      t: vectorResult.attributes.title || vectorResult.attributes.pageTitle || 'Untitled',
+      i: index + 10000, // Unique index to avoid conflicts
+      t: documentTitle,
       u: vectorResult.attributes.url,
       h: vectorResult.attributes.hash || '',
-      s: vectorResult.attributes.data ? vectorResult.attributes.data.substring(0, 200) : '',
+      s: documentSummary,
       b: vectorResult.attributes.breadcrumb || [],
     },
-    type: SearchDocumentType.Title,
-    page: undefined, // Create a mock page object that won't cause errors
-    metadata: {}, // Empty metadata - no highlighting positions
-    tokens: [], // Empty tokens - no search terms to highlight
+    type: documentType, // Always use Title type for simplicity
+    page: mockPage,
+    metadata: metadata,
+    tokens: tokens, 
     // Required SearchResultExtra properties
-    score: vectorResult.similarity,
-    index: index,
+    score: vectorResult.similarity * 100, // Scale similarity to match search scores
+    index: index + 10000,
     isInterOfTree: false,
-    isLastOfTree: false, // Will be updated later if needed
+    isLastOfTree: false,
     // Custom properties
     isVectorOnly: true,
     vectorSimilarity: vectorResult.similarity,
   };
+
+  console.log('✅ Converted SearchResult:', {
+    documentTitle: searchResult.document.t.substring(0, 50) + '...',
+    documentUrl: searchResult.document.u,
+    type: searchResult.type,
+    hasPage: !!searchResult.page,
+    pageTitle: (searchResult.page as SearchDocument)?.t,
+    isVectorOnly: searchResult.isVectorOnly,
+    similarity: searchResult.vectorSimilarity,
+    hasTokens: searchResult.tokens.length > 0,
+    hasMetadata: Object.keys(searchResult.metadata).length > 0
+  });
+
+  return searchResult;
 }
 
 export function combineSearchResults(
@@ -45,11 +92,24 @@ export function combineSearchResults(
   console.log('🎯 Vector search results:', vectorResults.length, 'items');
   console.log('🎚️ Max results limit:', maxResults);
 
+  // Log autocomplete result structure for comparison
+  if (autocompleteResults.length > 0) {
+    const sample = autocompleteResults[0];
+    console.log('📊 Sample autocomplete result structure:', {
+      type: sample.type,
+      hasTokens: sample.tokens.length > 0,
+      hasMetadata: Object.keys(sample.metadata).length > 0,
+      metadataKeys: Object.keys(sample.metadata),
+      documentTitle: sample.document.t.substring(0, 50),
+      pageTitle: sample.page ? (sample.page as SearchDocument).t : 'no page'
+    });
+  }
+
   // Create a map of vector results by URL for quick lookup
   const vectorResultMap = new Map<string, VectoLookupResult>();
   vectorResults.forEach(result => {
     const baseUrl = result.attributes.url;
-    console.log(`🔗 Vector result URL: ${baseUrl} (similarity: ${result.similarity})`);
+    console.log(`🔗 Mapping vector result URL: ${baseUrl} (similarity: ${result.similarity})`);
     vectorResultMap.set(baseUrl, result);
   });
 
@@ -96,13 +156,26 @@ export function combineSearchResults(
   if (remainingSlots > 0) {
     console.log('🔄 Converting unused vector results to fill remaining slots');
     
-    vectorResults
-      .filter(vectorResult => !usedVectorUrls.has(vectorResult.attributes.url))
+    const unusedVectors = vectorResults.filter(vectorResult => !usedVectorUrls.has(vectorResult.attributes.url));
+    console.log(`🎯 Found ${unusedVectors.length} unused vector results`);
+    
+    unusedVectors
       .slice(0, remainingSlots)
       .forEach((vectorResult, index) => {
         console.log(`🎯 Adding vector-only result ${index + 1}: ${vectorResult.attributes.url} (similarity: ${vectorResult.similarity})`);
         
         const convertedResult = convertVectorResultToSearchResult(vectorResult, currentResultCount + index);
+        
+        // Validate the converted result before adding
+        console.log('🔍 Validating converted result:', {
+          hasDocument: !!convertedResult.document,
+          hasDocumentTitle: !!convertedResult.document.t,
+          hasPage: !!convertedResult.page,
+          type: convertedResult.type,
+          tokensLength: convertedResult.tokens.length,
+          metadataKeys: Object.keys(convertedResult.metadata).length
+        });
+        
         unusedVectorResults.push(convertedResult);
       });
   }
@@ -121,12 +194,17 @@ export function combineSearchResults(
   console.log(`   - Vector-only results: ${unusedVectorResults.length}`);
   console.log(`   - Total results: ${finalResults.length}`);
 
-  // Log the final order
+  // Final validation of all results
   finalResults.forEach((result, index) => {
-    const boostStatus = result.isBoosted ? '🚀 BOOSTED' : 
-                       result.isVectorOnly ? '🎯 VECTOR-ONLY' : '📄 NORMAL';
-    const similarity = result.vectorSimilarity ? ` (sim: ${result.vectorSimilarity.toFixed(3)})` : '';
-    console.log(`${index + 1}. ${boostStatus} ${result.document.u}${similarity}`);
+    console.log(`🔍 Final result ${index + 1} validation:`, {
+      type: result.type,
+      hasTitle: !!result.document.t,
+      hasUrl: !!result.document.u,
+      hasPage: !!result.page,
+      tokensCount: result.tokens.length,
+      metadataKeyCount: Object.keys(result.metadata).length,
+      isVectorOnly: result.isVectorOnly
+    });
   });
 
   return finalResults;

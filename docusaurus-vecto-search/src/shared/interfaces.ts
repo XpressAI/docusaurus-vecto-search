@@ -99,6 +99,17 @@ export interface SearchResultExtra {
   isLastOfTree: boolean;
 }
 
+// Extended interfaces for vector search
+export interface VectorSearchResult extends SearchResult {
+  isBoosted?: boolean;
+  isVectorOnly?: boolean;
+  vectorSimilarity?: number;
+}
+
+export interface LoadingSearchResult extends SearchResult {
+  isLoading?: boolean;
+}
+
 export interface WrappedIndex {
   documents: SearchDocument[];
   index: lunr.Index;

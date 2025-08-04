@@ -17,7 +17,7 @@ import {
 import { useActivePlugin } from "@docusaurus/plugin-content-docs/client";
 
 import { fetchIndexesByWorker, searchByWorker } from "../searchByWorker";
-import { SuggestionTemplate } from "./SuggestionTemplate";
+import { VectorSuggestionTemplate } from "./VectorSuggestionTemplate";
 import { EmptyTemplate } from "./EmptyTemplate";
 import { LoadingTemplate } from "./LoadingTemplate";
 import { SearchResult, SearchDocumentType } from "../../../shared/interfaces";
@@ -39,10 +39,8 @@ import { searchResultLimits } from "../../utils/proxiedGeneratedConstants";
 import { parseKeymap, matchesKeymap, getKeymapHints } from "../../utils/keymap";
 import { isMacPlatform } from "../../utils/platform";
 
-// Import vector search utilities
 import { 
   vectoSearch, 
-  VectoLookupResult, 
   groupAndAverageByURL, 
   groupAndCountByURL,
   groupAndWeightedAverageByURL,
@@ -231,87 +229,85 @@ export default function SearchBar({
     searchContext === "";
 
   // Debounced search function
-// Update the performDebouncedSearch function in SearchBar:
-
-const performDebouncedSearch = useCallback(async (input: string, callback: (output: CombinedSearchResult[]) => void) => {
-  console.log('🔍 Starting debounced search for:', input);
-  
-  // Cancel previous search if still running
-  if (searchAbortControllerRef.current) {
-    searchAbortControllerRef.current.abort();
-  }
-  
-  const abortController = new AbortController();
-  searchAbortControllerRef.current = abortController;
-  currentSearchRef.current = input;
-  pendingCallbackRef.current = callback;
-
-  try {
-    setVectorSearchLoading(true);
+  const performDebouncedSearch = useCallback(async (input: string, callback: (output: CombinedSearchResult[]) => void) => {
+    console.log('🔍 Starting debounced search for:', input);
     
-    // Show loading template immediately
-    callback([{
-      document: { i: 0, u: '', h: '', t: '', s: '', b: [] },
-      type: SearchDocumentType.Title,
-      page: undefined,
-      metadata: {},
-      tokens: [],
-      score: 0,
-      index: 0,
-      isInterOfTree: false,
-      isLastOfTree: false,
-      isLoading: true,
-    } as any]);
-    
-    // Get initial search results with higher limit for vector search processing
-    const initialResults = await searchByWorker(
-      versionUrl,
-      searchContext,
-      input,
-      Math.max(VECTOR_SEARCH_RESULTS_COUNT, searchResultLimits)
-    );
-
-    // Check if this search was cancelled
-    if (abortController.signal.aborted || currentSearchRef.current !== input) {
-      return;
+    // Cancel previous search if still running
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
     }
-
-    // Perform vector search with the initial results
-    const vectorEnhancedResults = await performVectorSearch(input, initialResults, context);
-
-    // Check again if this search was cancelled
-    if (abortController.signal.aborted || currentSearchRef.current !== input) {
-      return;
-    }
-
-    // IMPORTANT: Ensure we limit to searchResultLimits here
-    const finalLimitedResults = vectorEnhancedResults.slice(0, searchResultLimits);
     
-    console.log(`✂️ Final results limited from ${vectorEnhancedResults.length} to ${finalLimitedResults.length}`);
+    const abortController = new AbortController();
+    searchAbortControllerRef.current = abortController;
+    currentSearchRef.current = input;
+    pendingCallbackRef.current = callback;
 
-    setVectorSearchLoading(false);
-    
-    // Only call callback if this is still the current search
-    if (pendingCallbackRef.current === callback) {
-      callback(finalLimitedResults);
-    }
-  } catch (error) {
-    if (!abortController.signal.aborted) {
-      console.error('❌ Vector search pipeline error:', error);
-      // Fallback to original search results - also limit these
-      const fallbackResults = await searchByWorker(
+    try {
+      setVectorSearchLoading(true);
+      
+      // Show loading template immediately
+      callback([{
+        document: { i: 0, u: '', h: '', t: '', s: '', b: [] },
+        type: SearchDocumentType.Title,
+        page: undefined,
+        metadata: {},
+        tokens: [],
+        score: 0,
+        index: 0,
+        isInterOfTree: false,
+        isLastOfTree: false,
+        isLoading: true,
+      } as any]);
+      
+      // Get initial search results with higher limit for vector search processing
+      const initialResults = await searchByWorker(
         versionUrl,
         searchContext,
         input,
-        searchResultLimits
+        Math.max(VECTOR_SEARCH_RESULTS_COUNT, searchResultLimits)
       );
+
+      // Check if this search was cancelled
+      if (abortController.signal.aborted || currentSearchRef.current !== input) {
+        return;
+      }
+
+      // Perform vector search with the initial results
+      const vectorEnhancedResults = await performVectorSearch(input, initialResults, context);
+
+      // Check again if this search was cancelled
+      if (abortController.signal.aborted || currentSearchRef.current !== input) {
+        return;
+      }
+
+      // Ensure we limit to searchResultLimits here
+      const finalLimitedResults = vectorEnhancedResults.slice(0, searchResultLimits);
+      
+      console.log(`✂️ Final results limited from ${vectorEnhancedResults.length} to ${finalLimitedResults.length}`);
+
       setVectorSearchLoading(false);
+      
+      // Only call callback if this is still the current search
       if (pendingCallbackRef.current === callback) {
-        callback(fallbackResults.map(r => ({ ...r })));
+        callback(finalLimitedResults);
+      }
+    } catch (error) {
+      if (!abortController.signal.aborted) {
+        console.error('❌ Vector search pipeline error:', error);
+        // Fallback to original search results - also limit these
+        const fallbackResults = await searchByWorker(
+          versionUrl,
+          searchContext,
+          input,
+          searchResultLimits
+        );
+        setVectorSearchLoading(false);
+        if (pendingCallbackRef.current === callback) {
+          callback(fallbackResults.map(r => ({ ...r })));
+        }
       }
     }
-  }
-}, [versionUrl, searchContext, context]);
+  }, [versionUrl, searchContext, context]);
 
   const loadIndex = useCallback(async () => {
     if (hidden || indexStateMap.current.get(searchContext)) {
@@ -458,27 +454,78 @@ const performDebouncedSearch = useCallback(async (input: string, callback: (outp
                 return LoadingTemplate();
               }
               
-              // Use the standard suggestion template for ALL results
-              const originalTemplate = SuggestionTemplate(suggestion);
+              console.log('🎨 Rendering suggestion template for:', {
+                url: suggestion.document.u,
+                title: suggestion.document.t?.substring(0, 50),
+                type: suggestion.type,
+                hasPage: !!suggestion.page,
+                isVectorOnly: suggestion.isVectorOnly,
+                isBoosted: suggestion.isBoosted,
+                tokensCount: suggestion.tokens?.length || 0,
+                metadataKeys: Object.keys(suggestion.metadata || {}).length,
+                hasMetadata: !!suggestion.metadata && Object.keys(suggestion.metadata).length > 0
+              });
               
-              // Add visual indicators based on result type
-              if (suggestion.isVectorOnly) {
-                // Add vector-only indicator
-                const vectorIndicator = `<span class="${styles.vectorIndicator}" title="AI Search Result">🎯</span>`;
-                return originalTemplate.replace(
-                  `<span class="${styles.hitIcon}">`,
-                  `${vectorIndicator}<span class="${styles.hitIcon}">`
-                );
-              } else if (suggestion.isBoosted) {
-                // Add boost indicator for enhanced results
-                const boostIndicator = `<span class="${styles.boostIndicator}" title="Enhanced by AI">🚀</span>`;
-                return originalTemplate.replace(
-                  `<span class="${styles.hitIcon}">`,
-                  `${boostIndicator}<span class="${styles.hitIcon}">`
-                );
+              // Validate required properties before rendering
+              if (!suggestion.document || !suggestion.document.t || !suggestion.document.u) {
+                console.error('❌ Invalid suggestion object:', suggestion);
+                return '<div class="error">Invalid search result</div>';
               }
               
-              return originalTemplate;
+              try {
+                console.log('🔧 About to call VectorSuggestionTemplate');
+                
+                // Use the vector-aware suggestion template for ALL results
+                const originalTemplate = VectorSuggestionTemplate(suggestion);
+                
+                console.log('✅ VectorSuggestionTemplate completed successfully');
+                
+                // Add visual indicators based on result type
+                if (suggestion.isVectorOnly) {
+                  // Add vector-only indicator
+                  const vectorIndicator = `<span class="${styles.vectorIndicator}" title="AI Search Result">🎯</span>`;
+                  return originalTemplate.replace(
+                    `<span class="${styles.hitIcon}">`,
+                    `${vectorIndicator}<span class="${styles.hitIcon}">`
+                  );
+                } else if (suggestion.isBoosted) {
+                  // Add boost indicator for enhanced results
+                  const boostIndicator = `<span class="${styles.boostIndicator}" title="Enhanced by AI">🚀</span>`;
+                  return originalTemplate.replace(
+                    `<span class="${styles.hitIcon}">`,
+                    `${boostIndicator}<span class="${styles.hitIcon}">`
+                  );
+                }
+                
+                return originalTemplate;
+              } catch (error) {
+                console.error('❌ Error in VectorSuggestionTemplate rendering:', {
+                  error: error instanceof Error ? error.message : String(error),
+                  stack: error instanceof Error ? error.stack : undefined,
+                  suggestion: {
+                    url: suggestion.document.u,
+                    title: suggestion.document.t?.substring(0, 50),
+                    type: suggestion.type,
+                    tokensCount: suggestion.tokens?.length || 0,
+                    metadataKeys: Object.keys(suggestion.metadata || {})
+                  }
+                });
+                
+                // Create a safe fallback template
+                const safeTitle = (suggestion.document.t || 'Untitled').replace(/[<>&"]/g, (c) => {
+                  return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] || c;
+                });
+                
+                const fallbackTemplate = `
+                  <span class="${styles.hitIcon}">${suggestion.isVectorOnly ? '🎯' : '📄'}</span>
+                  <span class="${styles.hitWrapper}">
+                    <span class="${styles.hitTitle}">${safeTitle}</span>
+                  </span>
+                  <span class="${styles.hitAction}">→</span>
+                `;
+                
+                return fallbackTemplate;
+              }
             },
             empty: EmptyTemplate,
             footer: ({ query, isEmpty }: any) => {
