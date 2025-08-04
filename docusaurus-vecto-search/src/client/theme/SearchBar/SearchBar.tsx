@@ -19,7 +19,8 @@ import { useActivePlugin } from "@docusaurus/plugin-content-docs/client";
 import { fetchIndexesByWorker, searchByWorker } from "../searchByWorker";
 import { SuggestionTemplate } from "./SuggestionTemplate";
 import { EmptyTemplate } from "./EmptyTemplate";
-import { SearchResult } from "../../../shared/interfaces";
+import { LoadingTemplate } from "./LoadingTemplate";
+import { SearchResult, SearchDocumentType } from "../../../shared/interfaces";
 import {
   Mark,
   searchBarShortcut,
@@ -38,6 +39,16 @@ import { searchResultLimits } from "../../utils/proxiedGeneratedConstants";
 import { parseKeymap, matchesKeymap, getKeymapHints } from "../../utils/keymap";
 import { isMacPlatform } from "../../utils/platform";
 
+// Import vector search utilities
+import { 
+  vectoSearch, 
+  VectoLookupResult, 
+  groupAndAverageByURL, 
+  groupAndCountByURL,
+  groupAndWeightedAverageByURL,
+} from "../../utils/vectoApiUtils";
+import { combineSearchResults, CombinedSearchResult } from "../../utils/combineSearchResults";
+
 import styles from "./SearchBar.module.css";
 import { getFooterLogoHTML } from "./FooterTemplate";
 
@@ -45,16 +56,84 @@ async function fetchAutoCompleteJS(): Promise<any> {
   const autoCompleteModule = await import("@easyops-cn/autocomplete.js");
   const autoComplete = autoCompleteModule.default;
   if (autoComplete.noConflict) {
-    // For webpack v5 since docusaurus v2.0.0-alpha.75
     autoComplete.noConflict();
   } else if (autoCompleteModule.noConflict) {
-    // For webpack v4 before docusaurus v2.0.0-alpha.74
     autoCompleteModule.noConflict();
   }
   return autoComplete;
 }
 
 const SEARCH_PARAM_HIGHLIGHT = "_highlight";
+
+// Configuration for vector search and debouncing
+const VECTOR_SEARCH_RESULTS_COUNT = 20;
+const SEARCH_DEBOUNCE_MS = 500;
+
+// Vector search configuration interface
+interface VectoPluginOptions {
+  vecto_public_token?: string;
+  vector_space_id?: number;
+  top_k?: number;
+  rankBy?: string;
+  [key: string]: any;
+}
+
+// Enhanced vector search function
+async function performVectorSearch(
+  query: string, 
+  results: SearchResult[], 
+  context: any
+): Promise<CombinedSearchResult[]> {
+  console.log('🔍 Vector search called with query:', query);
+  console.log('📊 Autocomplete results to enhance:', results.length);
+
+  try {
+    // Extract vector search configuration
+    const themeTuple = context.siteConfig.themes[0] as VectoPluginOptions;
+    const configValues = themeTuple?.[1];
+    
+    if (!configValues?.vector_space_id || !configValues?.vecto_public_token) {
+      console.log('⚠️ Vector search config missing, returning original results');
+      return results.map(r => ({ ...r }));
+    }
+
+    const vectorSpaceId = configValues.vector_space_id;
+    const publicToken = configValues.vecto_public_token;
+    const topK = configValues.top_k || 10;
+    const rankBy = configValues.rankBy || "average";
+
+    console.log('🔧 Vector search config:', { vectorSpaceId, topK, rankBy });
+
+    // 3 second delay as requested
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Perform vector search
+    let vectorResults = await vectoSearch(vectorSpaceId, publicToken, topK, query);
+    
+    console.log('🎯 Raw vector search results:', vectorResults.length);
+    
+    // Apply ranking strategy
+    if (rankBy === "average") {
+      vectorResults = groupAndAverageByURL(vectorResults);
+    } else if (rankBy === "count") {
+      vectorResults = groupAndCountByURL(vectorResults);
+    } else if (rankBy === "weightedAverage") {
+      vectorResults = groupAndWeightedAverageByURL(vectorResults);
+    }
+    
+    console.log('📈 Processed vector results after ranking:', vectorResults.length);
+    
+    // Combine and boost results with max results limit
+    const combinedResults = combineSearchResults(results, vectorResults, searchResultLimits);
+    
+    return combinedResults;
+    
+  } catch (error) {
+    console.error('❌ Vector search error:', error);
+    // Return original results on error
+    return results.map(r => ({ ...r }));
+  }
+}
 
 interface SearchBarProps {
   isSearchBarExpanded: boolean;
@@ -65,23 +144,16 @@ export default function SearchBar({
   handleSearchBarToggle,
 }: SearchBarProps): ReactElement {
   const isBrowser = useIsBrowser();
+  const context = useDocusaurusContext();
   const {
     siteConfig: { baseUrl },
     i18n: { currentLocale },
-  } = useDocusaurusContext();
+  } = context;
 
-  // It returns undefined for non-docs pages
   const activePlugin = useActivePlugin();
   let versionUrl = baseUrl;
 
-  // For non-docs pages while using plugin-content-docs with custom ids,
-  // this will throw an error of:
-  //   > Docusaurus plugin global data not found for "docusaurus-plugin-content-docs" plugin with id "default".
-  // It seems that we can not get the correct id for non-docs pages.
   try {
-    // The try-catch is a hack because useDocsPreferredVersion just throws an
-    // exception when versions are not used.
-    // The same hack is used in SearchPage.tsx
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { preferredVersion } = useDocsPreferredVersion(
       activePlugin?.pluginId ?? docsPluginIdForPreferredVersion
@@ -98,24 +170,34 @@ export default function SearchBar({
       }
     }
   }
+  
   const history = useHistory();
   const location = useLocation();
   const searchBarRef = useRef<HTMLInputElement>(null);
   const indexStateMap = useRef(new Map<string, "loading" | "done">());
-  // Should the input be focused after the index is loaded?
   const focusAfterIndexLoaded = useRef(false);
   const [loading, setLoading] = useState(false);
   const [inputChanged, setInputChanged] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const search = useRef<any>(null);
 
+  // Vector search state
+  const [vectorSearchLoading, setVectorSearchLoading] = useState(false);
+  const currentSearchRef = useRef<string>("");
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+  const pendingCallbackRef = useRef<((results: CombinedSearchResult[]) => void) | null>(null);
+  
+  // Debouncing state
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchQueueRef = useRef<{input: string; callback: (output: CombinedSearchResult[]) => void} | null>(null);
+
   const prevSearchContext = useRef<string>("");
   const [searchContext, setSearchContext] = useState<string>("");
   const prevVersionUrl = useRef<string>(baseUrl);
+  
   useEffect(() => {
     if (!Array.isArray(searchContextByPaths)) {
       if (prevVersionUrl.current !== versionUrl) {
-        // Reset index state map once version url is changed.
         indexStateMap.current.delete("");
         prevVersionUrl.current = versionUrl;
       }
@@ -137,7 +219,6 @@ export default function SearchBar({
       }
     }
     if (prevSearchContext.current !== nextSearchContext) {
-      // Reset index state map once search context is changed.
       indexStateMap.current.delete(nextSearchContext);
       prevSearchContext.current = nextSearchContext;
     }
@@ -149,9 +230,91 @@ export default function SearchBar({
     Array.isArray(searchContextByPaths) &&
     searchContext === "";
 
+  // Debounced search function
+// Update the performDebouncedSearch function in SearchBar:
+
+const performDebouncedSearch = useCallback(async (input: string, callback: (output: CombinedSearchResult[]) => void) => {
+  console.log('🔍 Starting debounced search for:', input);
+  
+  // Cancel previous search if still running
+  if (searchAbortControllerRef.current) {
+    searchAbortControllerRef.current.abort();
+  }
+  
+  const abortController = new AbortController();
+  searchAbortControllerRef.current = abortController;
+  currentSearchRef.current = input;
+  pendingCallbackRef.current = callback;
+
+  try {
+    setVectorSearchLoading(true);
+    
+    // Show loading template immediately
+    callback([{
+      document: { i: 0, u: '', h: '', t: '', s: '', b: [] },
+      type: SearchDocumentType.Title,
+      page: undefined,
+      metadata: {},
+      tokens: [],
+      score: 0,
+      index: 0,
+      isInterOfTree: false,
+      isLastOfTree: false,
+      isLoading: true,
+    } as any]);
+    
+    // Get initial search results with higher limit for vector search processing
+    const initialResults = await searchByWorker(
+      versionUrl,
+      searchContext,
+      input,
+      Math.max(VECTOR_SEARCH_RESULTS_COUNT, searchResultLimits)
+    );
+
+    // Check if this search was cancelled
+    if (abortController.signal.aborted || currentSearchRef.current !== input) {
+      return;
+    }
+
+    // Perform vector search with the initial results
+    const vectorEnhancedResults = await performVectorSearch(input, initialResults, context);
+
+    // Check again if this search was cancelled
+    if (abortController.signal.aborted || currentSearchRef.current !== input) {
+      return;
+    }
+
+    // IMPORTANT: Ensure we limit to searchResultLimits here
+    const finalLimitedResults = vectorEnhancedResults.slice(0, searchResultLimits);
+    
+    console.log(`✂️ Final results limited from ${vectorEnhancedResults.length} to ${finalLimitedResults.length}`);
+
+    setVectorSearchLoading(false);
+    
+    // Only call callback if this is still the current search
+    if (pendingCallbackRef.current === callback) {
+      callback(finalLimitedResults);
+    }
+  } catch (error) {
+    if (!abortController.signal.aborted) {
+      console.error('❌ Vector search pipeline error:', error);
+      // Fallback to original search results - also limit these
+      const fallbackResults = await searchByWorker(
+        versionUrl,
+        searchContext,
+        input,
+        searchResultLimits
+      );
+      setVectorSearchLoading(false);
+      if (pendingCallbackRef.current === callback) {
+        callback(fallbackResults.map(r => ({ ...r })));
+      }
+    }
+  }
+}, [versionUrl, searchContext, context]);
+
   const loadIndex = useCallback(async () => {
     if (hidden || indexStateMap.current.get(searchContext)) {
-      // Do not load the index (again) if its already loaded or in the process of being loaded.
       return;
     }
     indexStateMap.current.set(searchContext, "loading");
@@ -267,18 +430,56 @@ export default function SearchBar({
         {
           source: async (
             input: string,
-            callback: (output: SearchResult[]) => void
+            callback: (output: CombinedSearchResult[]) => void
           ) => {
-            const result = await searchByWorker(
-              versionUrl,
-              searchContext,
-              input,
-              searchResultLimits
-            );
-            callback(result);
+            console.log('⌨️ Search triggered for:', input);
+            
+            // Clear any existing debounce timeout
+            if (debounceTimeoutRef.current) {
+              clearTimeout(debounceTimeoutRef.current);
+            }
+            
+            // Store the current search request
+            searchQueueRef.current = { input, callback };
+            
+            // Set up debounced search
+            debounceTimeoutRef.current = setTimeout(() => {
+              const queuedSearch = searchQueueRef.current;
+              if (queuedSearch && queuedSearch.input === input) {
+                console.log('🕐 Debounce complete, executing search for:', input);
+                performDebouncedSearch(queuedSearch.input, queuedSearch.callback);
+              }
+            }, SEARCH_DEBOUNCE_MS);
           },
           templates: {
-            suggestion: SuggestionTemplate,
+            suggestion: (suggestion: CombinedSearchResult & { isLoading?: boolean }) => {
+              // Show loading template for loading state
+              if (suggestion.isLoading) {
+                return LoadingTemplate();
+              }
+              
+              // Use the standard suggestion template for ALL results
+              const originalTemplate = SuggestionTemplate(suggestion);
+              
+              // Add visual indicators based on result type
+              if (suggestion.isVectorOnly) {
+                // Add vector-only indicator
+                const vectorIndicator = `<span class="${styles.vectorIndicator}" title="AI Search Result">🎯</span>`;
+                return originalTemplate.replace(
+                  `<span class="${styles.hitIcon}">`,
+                  `${vectorIndicator}<span class="${styles.hitIcon}">`
+                );
+              } else if (suggestion.isBoosted) {
+                // Add boost indicator for enhanced results
+                const boostIndicator = `<span class="${styles.boostIndicator}" title="Enhanced by AI">🚀</span>`;
+                return originalTemplate.replace(
+                  `<span class="${styles.hitIcon}">`,
+                  `${boostIndicator}<span class="${styles.hitIcon}">`
+                );
+              }
+              
+              return originalTemplate;
+            },
             empty: EmptyTemplate,
             footer: ({ query, isEmpty }: any) => {
               if (isEmpty && (!searchContext || !useAllContextsWithNoSearchContext)) {
@@ -301,11 +502,28 @@ export default function SearchBar({
     )
       .on(
         "autocomplete:selected",
-        function (event: any, { document: { u, h }, tokens }: SearchResult) {
+        function (event: any, suggestion: CombinedSearchResult & { isLoading?: boolean }) {
+          // Don't navigate if it's a loading suggestion
+          if (suggestion.isLoading) {
+            event.preventDefault();
+            return;
+          }
+          
+          const resultType = suggestion.isVectorOnly ? 'VECTOR-ONLY' : 
+                            suggestion.isBoosted ? 'BOOSTED' : 'NORMAL';
+          
+          console.log('🖱️ Selected result:', {
+            type: resultType,
+            url: suggestion.document.u,
+            vectorSimilarity: suggestion.vectorSimilarity
+          });
+          
+          const { document: { u, h }, tokens } = suggestion;
           searchBarRef.current?.blur();
 
           let url = u;
-          if (Mark && tokens.length > 0) {
+          // Only add highlighting for non-vector-only results (they don't have tokens)
+          if (Mark && tokens && tokens.length > 0 && !suggestion.isVectorOnly) {
             const params = new URLSearchParams();
             for (const token of tokens) {
               params.append(SEARCH_PARAM_HIGHLIGHT, token);
@@ -320,6 +538,20 @@ export default function SearchBar({
       )
       .on("autocomplete:closed", () => {
         searchBarRef.current?.blur();
+        
+        // Clear debounce timeout
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+        
+        // Cancel ongoing searches
+        if (searchAbortControllerRef.current) {
+          searchAbortControllerRef.current.abort();
+        }
+        
+        setVectorSearchLoading(false);
+        pendingCallbackRef.current = null;
+        searchQueueRef.current = null;
       });
 
     indexStateMap.current.set(searchContext, "done");
@@ -332,7 +564,7 @@ export default function SearchBar({
       }
       input.focus();
     }
-  }, [hidden, searchContext, versionUrl, baseUrl, history]);
+  }, [hidden, searchContext, versionUrl, baseUrl, history, context, performDebouncedSearch]);
 
   useEffect(() => {
     if (!Mark) {
@@ -341,10 +573,6 @@ export default function SearchBar({
     const keywords = isBrowser
       ? new URLSearchParams(location.search).getAll(SEARCH_PARAM_HIGHLIGHT)
       : [];
-    // A workaround to fix an issue of highlighting in code blocks.
-    // See https://github.com/XpressAi/docusaurus-vecto-search/issues/92
-    // Code blocks will be re-rendered after this `useEffect` ran.
-    // So we make the marking run after a macro task.
     setTimeout(() => {
       const root = document.querySelector("article");
       if (!root) {
@@ -358,7 +586,6 @@ export default function SearchBar({
         });
       }
 
-      // Apply any keywords to the search input so that we can clear marks in case we loaded a page with a highlight in the url
       setInputValue(keywords.join(" "));
       search.current?.autocomplete.setVal(keywords.join(" "));
     });
@@ -392,10 +619,8 @@ export default function SearchBar({
     []
   );
 
-  // Implement hint icons for the search shortcuts on mac and the rest operating systems.
   const isMac = isBrowser ? isMacPlatform() : false;
 
-  // Sync the input value and focus state for SSR
   useEffect(
     () => {
       const searchBar = searchBarRef.current;
@@ -410,7 +635,6 @@ export default function SearchBar({
         handleSearchBarToggle?.(true);
       }
     },
-    // Only run this effect on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
@@ -422,7 +646,6 @@ export default function SearchBar({
     
     const parsedKeymap = parseKeymap(searchBarShortcutKeymap);
     
-    // Add shortcuts based on custom keymap
     const handleShortcut = (event: KeyboardEvent): void => {
       if (matchesKeymap(event, parsedKeymap)) {
         event.preventDefault();
@@ -449,10 +672,35 @@ export default function SearchBar({
       history.push(searchUrl);
     }
 
-    // We always clear these here because in case no match was selected the above history push wont happen
     setInputValue("");
     search.current?.autocomplete.setVal("");
+    
+    // Clear debounce timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Cancel ongoing searches
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+    
+    setVectorSearchLoading(false);
+    pendingCallbackRef.current = null;
+    searchQueueRef.current = null;
   }, [location.pathname, location.search, location.hash, history]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -461,7 +709,6 @@ export default function SearchBar({
         [styles.focused]: focused,
       })}
       hidden={hidden}
-      // Manually make the search bar be LTR even if in RTL
       dir="ltr"
     >
       <input
