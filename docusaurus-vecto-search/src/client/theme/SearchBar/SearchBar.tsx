@@ -483,14 +483,14 @@ export default function SearchBar({
                 // Add visual indicators based on result type
                 if (suggestion.isVectorOnly) {
                   // Add vector-only indicator
-                  const vectorIndicator = `<span class="${styles.vectorIndicator}" title="AI Search Result">🎯</span>`;
+                  const vectorIndicator = `<span class="${styles.vectorIndicator}" title="AI Search Result"></span>`;
                   return originalTemplate.replace(
                     `<span class="${styles.hitIcon}">`,
                     `${vectorIndicator}<span class="${styles.hitIcon}">`
                   );
                 } else if (suggestion.isBoosted) {
                   // Add boost indicator for enhanced results
-                  const boostIndicator = `<span class="${styles.boostIndicator}" title="Enhanced by AI">🚀</span>`;
+                  const boostIndicator = `<span class="${styles.boostIndicator}" title="Enhanced by AI"></span>`;
                   return originalTemplate.replace(
                     `<span class="${styles.hitIcon}">`,
                     `${boostIndicator}<span class="${styles.hitIcon}">`
@@ -517,7 +517,7 @@ export default function SearchBar({
                 });
                 
                 const fallbackTemplate = `
-                  <span class="${styles.hitIcon}">${suggestion.isVectorOnly ? '🎯' : '📄'}</span>
+                  <span class="${styles.hitIcon}">${suggestion.isVectorOnly ? '' : '📄'}</span>
                   <span class="${styles.hitWrapper}">
                     <span class="${styles.hitTitle}">${safeTitle}</span>
                   </span>
