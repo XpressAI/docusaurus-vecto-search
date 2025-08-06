@@ -101,9 +101,6 @@ async function performVectorSearch(
     const rankBy = configValues.rankBy || "average";
 
     console.log('🔧 Vector search config:', { vectorSpaceId, topK, rankBy });
-
-    // 3 second delay as requested
-    await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Perform vector search
     let vectorResults = await vectoSearch(vectorSpaceId, publicToken, topK, query);

@@ -11,7 +11,7 @@ export function getFooterLogoHTML(): string {
     <div class="DocSearch-Logo">
       <a href="https://vecto.ai/" target="_blank" rel="noopener noreferrer">
         <span class="DocSearch-Label">${searchByText}</span>
-        <svg width="121.8mm" height="27.083mm" style="width: 30%; height: auto;" version="1.1" viewBox="0 0 121.8 27.083" xmlns="http://www.w3.org/2000/svg">
+        <svg width="121.8mm" height="27.083mm" style="width: 20%; height: auto;" version="1.1" viewBox="0 0 121.8 27.083" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>.b {
                 fill: #3ea6be;

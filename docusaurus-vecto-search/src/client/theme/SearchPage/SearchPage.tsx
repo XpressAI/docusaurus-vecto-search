@@ -470,46 +470,7 @@ function CombinedSearchResultItem({
   }
 
   return (
-    <article className={`${styles.searchResultItem} ${isBoosted ? styles.boostedResult : ''} ${isVectorOnly ? styles.vectorOnlyResult : ''}`}>
-      {/* Result type indicators */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-        {isBoosted && (
-          <span style={{ 
-            backgroundColor: '#e3f2fd', 
-            color: '#1976d2', 
-            fontSize: '0.7rem', 
-            padding: '2px 6px', 
-            borderRadius: '3px', 
-            marginRight: '8px',
-            fontWeight: 'bold'
-          }}>
-            🚀 ENHANCED
-          </span>
-        )}
-        {isVectorOnly && (
-          <span style={{ 
-            backgroundColor: '#f3e5f5', 
-            color: '#7b1fa2', 
-            fontSize: '0.7rem', 
-            padding: '2px 6px', 
-            borderRadius: '3px', 
-            marginRight: '8px',
-            fontWeight: 'bold'
-          }}>
-            🤖 AI RESULT
-          </span>
-        )}
-        {vectorSimilarity && (
-          <span style={{ 
-            fontSize: '0.7rem', 
-            color: '#666', 
-            fontStyle: 'italic' 
-          }}>
-            Relevance: {(vectorSimilarity * 100).toFixed(1)}%
-          </span>
-        )}
-      </div>
-      
+    <article className={styles.searchResultItem}>
       <h2>
         <Link
           to={document.u + search + (document.h || "")}
