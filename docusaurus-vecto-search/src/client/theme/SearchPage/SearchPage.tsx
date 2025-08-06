@@ -36,6 +36,7 @@ import {
   groupAndCountByURL,
   groupAndWeightedAverageByURL,
  } from "../../utils/vectoApiUtils";
+import { combineSearchResultsCore, CombinedSearchResult } from "../../utils/combineSearchResults";
 
 export default function SearchPage(): React.ReactElement {
   return (
@@ -117,12 +118,12 @@ function SearchPageContent(): React.ReactElement {
     updateSearchContext,
   } = useSearchQuery();
   const [searchQuery, setSearchQuery] = useState(searchValue);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>();
+  
+  // Updated state to use combined results
+  const [searchResults, setSearchResults] = useState<CombinedSearchResult[]>();
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  
   const versionUrl = `${baseUrl}${searchVersion}`;
-
-  // Vecto search state
-  const [vectoSearchResults, setVectoSearchResults] = useState<VectoLookupResult[]>([]);
-  const [isLoadingVectoResults, setIsLoadingVectoResults] = useState(false);
 
   const pageTitle = useMemo(
     () =>
@@ -145,77 +146,98 @@ function SearchPageContent(): React.ReactElement {
     [searchQuery]
   );
 
-  // Vecto search handler with error handling
-  const handleVectoSearch = useCallback(async () => {
-    if (!vectorSpaceId || !publicToken || !searchQuery) return;
-    
-    setIsLoadingVectoResults(true);
-    setVectoSearchError(null);
-  
-    try {
-      let results = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
-      // Apply the correct function based on the rankBy
-      if (rankBy === "average") {
-        results = groupAndAverageByURL(results);
-      } else if (rankBy === "count") {
-          results = groupAndCountByURL(results);
-      } else if (rankBy === "weightedAverage") {
-        results = groupAndWeightedAverageByURL(results);
-      }
-      setVectoSearchResults(results);
-    } catch (error) {
-      console.error('Error fetching Vecto search results:', error);
-      setVectoSearchError(`Vecto search failed: ${error instanceof Error ? error.message : String(error)}`);
-      setVectoSearchResults([]);
-    } finally {
-      setIsLoadingVectoResults(false);
+  // Combined search handler
+  const handleCombinedSearch = useCallback(async () => {
+    if (!searchQuery) {
+      setSearchResults(undefined);
+      return;
     }
-  }, [searchQuery, vectorSpaceId, publicToken, topK, rankBy]);
+    
+    setIsLoadingResults(true);
+    setVectoSearchError(null);
 
-  useEffect(() => {
-    updateSearchPath(searchQuery);
+    try {
+      // Get traditional search results first
+      const traditionalResults = await searchByWorker(
+        versionUrl,
+        searchContext,
+        searchQuery,
+        100
+      );
 
-    if (searchQuery) {
-      (async () => {
-        const results = await searchByWorker(
+      // If Vecto is not configured, just use traditional results
+      if (!vectorSpaceId || !publicToken || vectoConfigErrors.length > 0) {
+        const combinedResults = traditionalResults.map(result => ({ ...result }));
+        setSearchResults(combinedResults);
+        setIsLoadingResults(false);
+        return;
+      }
+
+      // Perform vector search
+      let vectorResults = await vectoSearch(vectorSpaceId, publicToken, topK, searchQuery);
+      
+      // Apply the correct ranking function
+      if (rankBy === "average") {
+        vectorResults = groupAndAverageByURL(vectorResults);
+      } else if (rankBy === "count") {
+        vectorResults = groupAndCountByURL(vectorResults);
+      } else if (rankBy === "weightedAverage") {
+        vectorResults = groupAndWeightedAverageByURL(vectorResults);
+      }
+
+      // Combine the results using core logic (no maxResults limit for search page)
+      const combinedResults = combineSearchResultsCore(traditionalResults, vectorResults, 50);
+      
+      setSearchResults(combinedResults);
+    } catch (error) {
+      console.error('Error in combined search:', error);
+      setVectoSearchError(`Search failed: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Fallback to traditional search only
+      try {
+        const fallbackResults = await searchByWorker(
           versionUrl,
           searchContext,
           searchQuery,
           100
         );
-        setSearchResults(results);
-      })();
+        const combinedResults = fallbackResults.map(result => ({ ...result }));
+        setSearchResults(combinedResults);
+      } catch (fallbackError) {
+        console.error('Fallback search also failed:', fallbackError);
+        setSearchResults([]);
+      }
+    } finally {
+      setIsLoadingResults(false);
+    }
+  }, [searchQuery, versionUrl, searchContext, vectorSpaceId, publicToken, topK, rankBy, vectoConfigErrors.length]);
+
+  useEffect(() => {
+    updateSearchPath(searchQuery);
+    
+    // Clear the previous timeout if there's any
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set a new timeout to call combined search
+    if (searchQuery) {
+      searchTimeoutRef.current = setTimeout(() => {
+        handleCombinedSearch();
+      }, 300); // Shorter timeout for search page
     } else {
       setSearchResults(undefined);
     }
 
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+    
     // `updateSearchPath` should not be in the deps,
     // otherwise will cause call stack overflow.
-  }, [searchQuery, versionUrl, searchContext]);
-
-  // Vecto search with debounce
-  useEffect(() => {
-    // Clear the previous timeout if there's any
-    if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-    }
-
-    // If there's a search query, set a new timeout to call vecto search
-    if (searchQuery && vectorSpaceId && publicToken && vectoConfigErrors.length === 0) {
-        searchTimeoutRef.current = setTimeout(() => {
-            handleVectoSearch();
-        }, 500); 
-    } else {
-      setVectoSearchResults([]);
-    }
-
-    return () => {
-        // Clean up on component unmount or if effect runs again
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-    };
-  }, [searchQuery, handleVectoSearch, vectoConfigErrors.length]);
+  }, [searchQuery, handleCombinedSearch]);
 
   const handleSearchInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,25 +341,28 @@ function SearchPageContent(): React.ReactElement {
           ) : null}
         </div>
 
-        {/* Vecto Search Results Section - Always displayed */}
+        {/* Combined Search Results Section */}
         <section>
-          <h2>Vecto Search Results</h2>
+          <h2>Search Results</h2>
           
           {/* Display configuration errors */}
           {vectoConfigErrors.length > 0 && (
             <div style={{ 
-              backgroundColor: '#ffebee', 
-              border: '1px solid #f44336', 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffeaa7', 
               borderRadius: '4px', 
               padding: '12px', 
               marginBottom: '16px' 
             }}>
-              <h4 style={{ color: '#d32f2f', margin: '0 0 8px 0' }}>⚠️ Vecto Configuration Errors:</h4>
+              <h4 style={{ color: '#856404', margin: '0 0 8px 0' }}>⚠️ Vector Search Configuration Issues:</h4>
               <ul style={{ margin: '0', paddingLeft: '20px' }}>
                 {vectoConfigErrors.map((error, index) => (
-                  <li key={index} style={{ color: '#d32f2f' }}>{error}</li>
+                  <li key={index} style={{ color: '#856404' }}>{error}</li>
                 ))}
               </ul>
+              <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', fontStyle: 'italic', color: '#856404' }}>
+                Search will continue with traditional keyword-based results only.
+              </p>
             </div>
           )}
 
@@ -350,51 +375,21 @@ function SearchPageContent(): React.ReactElement {
               padding: '12px', 
               marginBottom: '16px' 
             }}>
-              <h4 style={{ color: '#d32f2f', margin: '0 0 8px 0' }}>❌ Vecto Search Error:</h4>
+              <h4 style={{ color: '#d32f2f', margin: '0 0 8px 0' }}>❌ Search Error:</h4>
               <p style={{ color: '#d32f2f', margin: '0' }}>{vectoSearchError}</p>
             </div>
           )}
 
           {/* Loading state */}
-          {isLoadingVectoResults && vectoConfigErrors.length === 0 && (
+          {isLoadingResults && (
             <div>
               <LoadingRing />
             </div>
           )}
 
           {/* Search results */}
-          {vectoSearchResults.length > 0 && vectoConfigErrors.length === 0 && (
+          {searchResults && searchResults.length > 0 && (
             <>
-              {vectoSearchResults.map((result, index) => (
-                <VectoSearchResultItem key={index} result={result} />
-              ))}
-            </>
-          )}
-
-          {/* No results message when search is done but no results */}
-          {searchQuery && 
-           !isLoadingVectoResults && 
-           vectoSearchResults.length === 0 && 
-           vectoConfigErrors.length === 0 && 
-           !vectoSearchError && (
-            <p style={{ fontStyle: 'italic', color: '#666' }}>
-              No Vecto search results found for "{searchQuery}"
-            </p>
-          )}
-        </section>
-
-        {/* Original Search Results */}
-        <section>
-          <h2>Key Based Search Results</h2>
-
-          {!searchWorkerReady && searchQuery && (
-            <div>
-              <LoadingRing />
-            </div>
-          )}
-
-          {searchResults &&
-            (searchResults.length > 0 ? (
               <p>
                 {selectMessage(
                   searchResults.length,
@@ -409,69 +404,120 @@ function SearchPageContent(): React.ReactElement {
                   )
                 )}
               </p>
-            ) : process.env.NODE_ENV === "production" ? (
-              <p>
-                {translate({
-                  id: "theme.SearchPage.noResultsText",
-                  message: "No documents were found",
-                  description: "The paragraph for empty search result",
-                })}
-              </p>
-            ) : (
-              <p>
-                ⚠️ The search index is only available when you run docusaurus
-                build!
-              </p>
-            ))}
+              {searchResults.map((item, index) => (
+                <CombinedSearchResultItem key={`${item.document.i}-${index}`} searchResult={item} />
+              ))}
+            </>
+          )}
 
-          {searchResults &&
-            searchResults.map((item) => (
-              <SearchResultItem key={item.document.i} searchResult={item} />
-            ))}
+          {/* No results message when search is done but no results */}
+          {!isLoadingResults && searchQuery && searchResults && searchResults.length === 0 && (
+            <p>
+              {translate({
+                id: "theme.SearchPage.noResultsText",
+                message: "No documents were found",
+                description: "The paragraph for empty search result",
+              })}
+            </p>
+          )}
+
+          {/* Development mode warning */}
+          {!isLoadingResults && searchQuery && !searchResults && process.env.NODE_ENV !== "production" && (
+            <p>
+              ⚠️ The search index is only available when you run docusaurus build!
+            </p>
+          )}
         </section>
       </div>
     </React.Fragment>
   );
 }
 
-function SearchResultItem({
-  searchResult: { document, type, page, tokens, metadata },
+// Updated combined search result item component
+function CombinedSearchResultItem({
+  searchResult,
 }: {
-  searchResult: SearchResult;
+  searchResult: CombinedSearchResult;
 }): React.ReactElement {
+  const { document, type, page, tokens, metadata, isBoosted, isVectorOnly, vectorSimilarity } = searchResult;
+  
   const isTitle = type === SearchDocumentType.Title;
   const isKeywords = type === SearchDocumentType.Keywords;
   const isDescription = type === SearchDocumentType.Description;
   const isDescriptionOrKeywords = isDescription || isKeywords;
   const isTitleRelated = isTitle || isDescriptionOrKeywords;
   const isContent = type === SearchDocumentType.Content;
+  
   const pathItems = (
     (isTitle ? document.b : (page as SearchDocument).b) as string[]
   ).slice();
+  
   const articleTitle = (
     isContent || isDescriptionOrKeywords ? document.s : document.t
   ) as string;
+  
   if (!isTitleRelated) {
     pathItems.push((page as SearchDocument).t);
   }
+  
   let search = "";
-  if (Mark && tokens.length > 0) {
+  if (Mark && tokens.length > 0 && !isVectorOnly) {
     const params = new URLSearchParams();
     for (const token of tokens) {
       params.append("_highlight", token);
     }
     search = `?${params.toString()}`;
   }
+
   return (
-    <article className={styles.searchResultItem}>
+    <article className={`${styles.searchResultItem} ${isBoosted ? styles.boostedResult : ''} ${isVectorOnly ? styles.vectorOnlyResult : ''}`}>
+      {/* Result type indicators */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+        {isBoosted && (
+          <span style={{ 
+            backgroundColor: '#e3f2fd', 
+            color: '#1976d2', 
+            fontSize: '0.7rem', 
+            padding: '2px 6px', 
+            borderRadius: '3px', 
+            marginRight: '8px',
+            fontWeight: 'bold'
+          }}>
+            🚀 ENHANCED
+          </span>
+        )}
+        {isVectorOnly && (
+          <span style={{ 
+            backgroundColor: '#f3e5f5', 
+            color: '#7b1fa2', 
+            fontSize: '0.7rem', 
+            padding: '2px 6px', 
+            borderRadius: '3px', 
+            marginRight: '8px',
+            fontWeight: 'bold'
+          }}>
+            🤖 AI RESULT
+          </span>
+        )}
+        {vectorSimilarity && (
+          <span style={{ 
+            fontSize: '0.7rem', 
+            color: '#666', 
+            fontStyle: 'italic' 
+          }}>
+            Relevance: {(vectorSimilarity * 100).toFixed(1)}%
+          </span>
+        )}
+      </div>
+      
       <h2>
         <Link
           to={document.u + search + (document.h || "")}
           dangerouslySetInnerHTML={{
             __html:
               isContent || isDescriptionOrKeywords
-                ? highlight(articleTitle, tokens)
-                : highlightStemmed(
+                ? isVectorOnly ? articleTitle : highlight(articleTitle, tokens)
+                : isVectorOnly ? articleTitle : highlightStemmed(
                     articleTitle,
                     getStemmedPositions(metadata, "t"),
                     tokens,
@@ -480,16 +526,18 @@ function SearchResultItem({
           }}
         ></Link>
       </h2>
+      
       {pathItems.length > 0 && (
         <p className={styles.searchResultItemPath}>
           {concatDocumentPath(pathItems)}
         </p>
       )}
+      
       {(isContent || isDescription) && (
         <p
           className={styles.searchResultItemSummary}
           dangerouslySetInnerHTML={{
-            __html: highlightStemmed(
+            __html: isVectorOnly ? document.t : highlightStemmed(
               document.t,
               getStemmedPositions(metadata, "t"),
               tokens,
@@ -497,54 +545,6 @@ function SearchResultItem({
             ),
           }}
         />
-      )}
-    </article>
-  );
-}
-
-// Vecto Search Result Item Component
-function VectoSearchResultItem({ result }: { result: VectoLookupResult }) {
-  const { breadcrumb, title, pageTitle, url, data } = result.attributes;
-
-  return (
-    <article className={styles.searchResultItem}>
-      
-      {/* Display breadcrumbs if they exist */}
-      {breadcrumb && breadcrumb.length > 0 && (
-        <p className={styles.searchResultItemPath}>
-          {concatDocumentPath(breadcrumb)}
-        </p>
-      )}
-
-      <div>
-        {/* If both title and pageTitle exist, display pageTitle smaller and title prominently */}
-        {/* If title doesn't exist, but pageTitle does, display pageTitle prominently */}
-        {pageTitle && (!title ? (
-          <h2>
-            <Link to={result.link}>Page: {pageTitle}</Link>
-          </h2>
-        ) : (
-          <>
-            <h5>{pageTitle}</h5>
-            <h2>
-              <Link to={result.link}>{title}</Link>
-            </h2>
-          </>
-        ))}
-      </div>
-
-      {/* Display similarity score if it exists */}
-      {result.similarity && (
-        <p style={{ fontSize: '0.8rem', color: 'gray', fontStyle: 'italic'}}>
-              Search Score: {result.similarity.toFixed(2)}
-        </p>
-      )}
-
-      {/* Display data if it exists and limit to 100 words */}
-      {data && (
-        <p style={{ fontStyle: 'italic' }}>
-          {data.split(" ").slice(0, 100).join(" ")}{data.split(" ").length > 100 ? "..." : ""}
-        </p>
       )}
     </article>
   );

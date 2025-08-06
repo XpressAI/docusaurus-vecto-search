@@ -7,7 +7,7 @@ export interface CombinedSearchResult extends SearchResult {
   vectorSimilarity?: number;
 }
 
-// Helper function to convert VectoLookupResult to proper SearchResult format that matches autocomplete results
+// Helper function to convert VectoLookupResult to proper SearchResult format
 function convertVectorResultToSearchResult(vectorResult: VectoLookupResult, index: number): CombinedSearchResult {
   console.log('🔄 Converting vector result to SearchResult:', {
     url: vectorResult.attributes.url,
@@ -29,7 +29,6 @@ function convertVectorResultToSearchResult(vectorResult: VectoLookupResult, inde
   };
 
   // For vector results, we'll use Title type to avoid complex highlighting issues
-  // Title results are simpler and don't require complex metadata
   const documentType = SearchDocumentType.Title;
   const documentTitle = vectorResult.attributes.title || vectorResult.attributes.data?.substring(0, 100) || 'Untitled';
   const documentSummary = vectorResult.attributes.data?.substring(0, 200) || '';
@@ -82,7 +81,7 @@ function convertVectorResultToSearchResult(vectorResult: VectoLookupResult, inde
   return searchResult;
 }
 
-export function combineSearchResults(
+export function combineSearchResultsCore(
   autocompleteResults: SearchResult[],
   vectorResults: VectoLookupResult[],
   maxResults: number = 10
@@ -183,11 +182,6 @@ export function combineSearchResults(
   // Combine all results: boosted first, then normal, then vector-only
   const finalResults = [...boostedResults, ...normalResults, ...unusedVectorResults];
   
-  // Update isLastOfTree for the final result if needed
-  if (finalResults.length > 0) {
-    finalResults[finalResults.length - 1].isLastOfTree = true;
-  }
-
   console.log(`🚀 Final result summary:`);
   console.log(`   - Boosted results: ${boostedResults.length}`);
   console.log(`   - Normal results: ${normalResults.length}`);
@@ -208,4 +202,20 @@ export function combineSearchResults(
   });
 
   return finalResults;
+}
+
+// SearchBar-specific wrapper that maintains compatibility
+export function combineSearchResults(
+  autocompleteResults: SearchResult[],
+  vectorResults: VectoLookupResult[],
+  maxResults: number = 10
+): CombinedSearchResult[] {
+  const results = combineSearchResultsCore(autocompleteResults, vectorResults, maxResults);
+  
+  // Update isLastOfTree for the final result if needed (SearchBar specific)
+  if (results.length > 0) {
+    results[results.length - 1].isLastOfTree = true;
+  }
+
+  return results;
 }
