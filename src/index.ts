@@ -1,6 +1,7 @@
 import path from "path";
 import type { LoadContext, Plugin } from "@docusaurus/types";
 import type { ThemeConfig } from "@docusaurus/types";
+import { normalizeUrl } from "@docusaurus/utils";
 import { indexSite } from "./server/indexer";
 import type { VectorSearchConfig } from "./types";
 
@@ -13,6 +14,14 @@ export default function vectorSearchTheme(
 
     getThemePath() {
       return path.resolve(__dirname, "../src/theme");
+    },
+
+    async contentLoaded({ actions: { addRoute } }) {
+      addRoute({
+        path: normalizeUrl([context.baseUrl, "search"]),
+        component: "@theme/SearchPage",
+        exact: true,
+      });
     },
 
     async postBuild({ outDir, routesPaths, plugins }) {

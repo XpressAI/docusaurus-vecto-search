@@ -276,8 +276,9 @@ export default function SearchBar(): JSX.Element {
   const seeAllResults = useCallback((): void => {
     if (!query) return;
     onClose();
-    history.push(`/search?q=${encodeURIComponent(query)}`);
-  }, [query, history, onClose]);
+    // Full navigation — avoids chunk-loading race on first visit
+    window.location.href = `${siteConfig.baseUrl}search?q=${encodeURIComponent(query)}`;
+  }, [query, siteConfig.baseUrl, onClose]);
 
   // ── Keyboard navigation ──
   const onKeyDownInput = useCallback(
