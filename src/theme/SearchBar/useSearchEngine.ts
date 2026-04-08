@@ -28,6 +28,7 @@ try {
 
 interface UseSearchEngineReturn {
   search: (query: string) => Promise<SearchResult[]>;
+  suggest: (query: string) => string;
   ready: boolean;
 }
 
@@ -188,5 +189,44 @@ export function useSearchEngine(): UseSearchEngineReturn {
     [ready, mode, maxResults, rrfK, weights, docMap, contextVersion, contextLocale]
   );
 
-  return { search, ready };
+  // ── Autocomplete suggestion ──
+  // Prefix-match the last word of the query against document titles/headings.
+  const titles = useMemo(() => {
+    if (!documents) return [] as string[];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const d of documents) {
+      const t = d.title.toLowerCase();
+      if (!seen.has(t)) {
+        seen.add(t);
+        result.push(d.title);
+      }
+      if (d.heading && d.heading !== d.title) {
+        const h = d.heading.toLowerCase();
+        if (!seen.has(h)) {
+          seen.add(h);
+          result.push(d.heading);
+        }
+      }
+    }
+    return result;
+  }, [documents]);
+
+  const suggest = useCallback(
+    (query: string): string => {
+      if (!query || query.length < 2 || titles.length === 0) return "";
+      const lower = query.toLowerCase();
+      // Find the first title that starts with the full query
+      for (const t of titles) {
+        if (t.toLowerCase().startsWith(lower) && t.toLowerCase() !== lower) {
+          // Return suggestion preserving the user's typed casing
+          return query + t.slice(query.length);
+        }
+      }
+      return "";
+    },
+    [titles]
+  );
+
+  return { search, suggest, ready };
 }

@@ -4,31 +4,33 @@
   --vs-primary-color: #00D7F2;
   --vs-text-color: rgb(28, 30, 33);
   --vs-spacing: 12px;
-  --vs-muted-color: rgb(150, 159, 175);
-  --vs-container-background: rgba(255, 255, 255, 0.98);
+  --vs-icon-stroke-width: 1.4;
   --vs-highlight-color: #435658;
+  --vs-muted-color: rgb(150, 159, 175);
+  --vs-container-background: rgba(101, 108, 133, 0.8);
+  --vs-logo-color: rgba(84, 104, 255);
 
-  /* search input */
-  --vs-searchbox-height: 44px;
+  /* modal */
+  --vs-modal-width: 560px;
+  --vs-modal-height: 600px;
+  --vs-modal-background: rgb(245, 246, 247);
+  --vs-modal-shadow: inset 1px 1px 0 0 rgba(255, 255, 255, 0.5),
+    0 3px 8px 0 rgba(85, 90, 100, 1);
+
+  /* searchbox */
+  --vs-searchbox-height: 56px;
   --vs-searchbox-background: rgb(235, 237, 240);
   --vs-searchbox-focus-background: #fff;
   --vs-searchbox-shadow: inset 0 0 0 2px var(--vs-primary-color);
-  --vs-searchbox-border-radius: 40px;
 
-  /* dropdown */
-  --vs-dropdown-background: rgb(245, 246, 247);
-  --vs-dropdown-shadow: 0 3px 12px 0 rgba(85, 90, 100, 0.25);
-  --vs-dropdown-max-height: 480px;
+  /* hit */
+  --vs-hit-height: 56px;
+  --vs-hit-color: rgb(68, 73, 80);
+  --vs-hit-active-color: #fff;
+  --vs-hit-background: #fff;
+  --vs-hit-shadow: 0 1px 3px 0 rgb(212, 217, 225);
 
-  /* result items */
-  --vs-result-height: 56px;
-  --vs-result-color: rgb(68, 73, 80);
-  --vs-result-active-color: #fff;
-  --vs-result-background: #fff;
-  --vs-result-shadow: 0 1px 3px 0 rgb(212, 217, 225);
-  --vs-result-active-background: var(--vs-primary-color);
-
-  /* key badge */
+  /* key */
   --vs-key-gradient: linear-gradient(
     -225deg,
     rgb(213, 219, 228) 0%,
@@ -37,23 +39,26 @@
   --vs-key-shadow: inset 0 -2px 0 0 rgb(205, 205, 230),
     inset 0 0 1px 1px #fff, 0 1px 2px 1px rgba(30, 35, 90, 0.4);
 
-  /* loading spinner */
-  --vs-loading-color: var(--vs-primary-color);
+  /* footer */
+  --vs-footer-height: 44px;
+  --vs-footer-background: #fff;
+  --vs-footer-shadow: 0 -1px 0 0 rgb(224, 227, 232),
+    0 -3px 6px 0 rgba(69, 98, 155, 0.12);
 }
 
-/* ── Dark mode ── */
+/* ── Dark Mode ── */
 
 html[data-theme='dark'] {
   --vs-text-color: rgb(245, 246, 247);
-  --vs-muted-color: rgb(127, 132, 151);
-  --vs-container-background: rgba(21, 23, 42, 0.98);
+  --vs-container-background: rgba(9, 10, 17, 0.8);
+  --vs-modal-background: rgb(21, 23, 42);
+  --vs-modal-shadow: inset 1px 1px 0 0 rgb(44, 46, 64),
+    0 3px 8px 0 rgb(0, 3, 9);
   --vs-searchbox-background: rgb(9, 10, 17);
   --vs-searchbox-focus-background: #000;
-  --vs-dropdown-background: rgb(21, 23, 42);
-  --vs-dropdown-shadow: 0 3px 12px 0 rgba(0, 3, 9, 0.5);
-  --vs-result-color: rgb(190, 195, 201);
-  --vs-result-shadow: none;
-  --vs-result-background: rgb(9, 10, 17);
+  --vs-hit-color: rgb(190, 195, 201);
+  --vs-hit-shadow: none;
+  --vs-hit-background: rgb(9, 10, 17);
   --vs-key-gradient: linear-gradient(
     -26.5deg,
     rgb(86, 88, 114) 0%,
@@ -61,200 +66,484 @@ html[data-theme='dark'] {
   );
   --vs-key-shadow: inset 0 -2px 0 0 rgb(40, 45, 85),
     inset 0 0 1px 1px rgb(81, 87, 125), 0 2px 2px 0 rgba(3, 4, 9, 0.3);
+  --vs-footer-background: rgb(30, 33, 54);
+  --vs-footer-shadow: inset 0 1px 0 0 rgba(73, 76, 106, 0.5),
+    0 -4px 8px 0 rgba(0, 0, 0, 0.2);
+  --vs-logo-color: rgb(255, 255, 255);
+  --vs-muted-color: rgb(127, 132, 151);
 }
 
-/* ── Container ── */
+/* ── Navbar Button ── */
 
-.vs-search-container {
-  position: relative;
-  display: flex;
+.vs-button {
   align-items: center;
+  background: var(--vs-searchbox-background);
+  border: 0;
+  border-radius: 40px;
+  color: var(--vs-muted-color);
+  cursor: pointer;
+  display: flex;
+  font-weight: 500;
+  height: 36px;
+  justify-content: space-between;
+  margin: 0 0 0 16px;
+  padding: 0 8px;
+  user-select: none;
 }
 
-.vs-search-container,
-.vs-search-container * {
+.vs-button:hover,
+.vs-button:active,
+.vs-button:focus {
+  background: var(--vs-searchbox-focus-background);
+  box-shadow: var(--vs-searchbox-shadow);
+  color: var(--vs-text-color);
+  outline: none;
+}
+
+.vs-button-container {
+  align-items: center;
+  display: flex;
+}
+
+.vs-search-icon {
+  stroke-width: 1.6;
+}
+
+.vs-button .vs-search-icon {
+  color: var(--vs-text-color);
+}
+
+.vs-button-placeholder {
+  font-size: 1rem;
+  padding: 0 12px 0 6px;
+}
+
+.vs-button-keys {
+  display: flex;
+  min-width: calc(2 * 20px + 2 * 0.4em);
+}
+
+.vs-button-key {
+  align-items: center;
+  background: var(--vs-key-gradient);
+  border: 0;
+  border-radius: 3px;
+  box-shadow: var(--vs-key-shadow);
+  color: var(--vs-muted-color);
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin-right: 0.4em;
+  padding: 0 0 2px 0;
+  position: relative;
+  top: -1px;
+  width: 20px;
+}
+
+/* ── Dialog ── */
+
+.vs-dialog {
+  background: transparent;
+  border: 0;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  padding: 0;
+  width: 100%;
+}
+
+.vs-dialog::backdrop {
+  background-color: var(--vs-container-background);
+}
+
+.vs-dialog[open] {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.vs-dialog *,
+.vs-dialog *::before,
+.vs-dialog *::after {
   box-sizing: border-box;
 }
 
-/* ── Input Wrapper ── */
-
-.vs-search-input-wrapper {
-  display: flex;
-  align-items: center;
+.vs-dialog a {
+  text-decoration: none;
 }
 
-.vs-search-input {
+/* ── Modal ── */
+
+.vs-modal {
+  background: var(--vs-modal-background);
+  border-radius: 6px;
+  box-shadow: var(--vs-modal-shadow);
+  display: flex;
+  flex-direction: column;
+  margin: 60px auto auto;
+  max-width: var(--vs-modal-width);
+  position: relative;
+}
+
+/* ── Search Bar ── */
+
+.vs-search-bar {
+  display: flex;
+  padding: var(--vs-spacing) var(--vs-spacing) 0;
+}
+
+.vs-form {
+  align-items: center;
+  background: var(--vs-searchbox-focus-background);
+  border-radius: 4px;
+  box-shadow: var(--vs-searchbox-shadow);
+  display: flex;
+  height: var(--vs-searchbox-height);
+  margin: 0;
+  padding: 0 var(--vs-spacing);
+  position: relative;
+  width: 100%;
+}
+
+.vs-input-wrapper {
+  flex: 1;
+  height: 100%;
+  position: relative;
+}
+
+.vs-input {
   appearance: none;
-  background: var(--vs-searchbox-background);
+  background: transparent;
   border: 0;
-  border-radius: var(--vs-searchbox-border-radius);
   color: var(--vs-text-color);
   font: inherit;
-  font-size: 0.9em;
-  height: 36px;
+  font-size: 1.2em;
+  height: 100%;
   outline: none;
-  padding: 0 12px 0 36px;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-  width: 200px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23969faf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: 12px center;
+  padding: 0 0 0 8px;
+  position: relative;
+  width: 100%;
+  z-index: 1;
 }
 
-.vs-search-input::placeholder {
+.vs-suggestion {
+  color: var(--vs-muted-color);
+  font: inherit;
+  font-size: 1.2em;
+  left: 0;
+  opacity: 0.5;
+  padding: 0 0 0 8px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 0;
+}
+
+.vs-suggestion-hidden {
+  visibility: hidden;
+}
+
+.vs-input::placeholder {
   color: var(--vs-muted-color);
   opacity: 1;
 }
 
-.vs-search-input:focus {
-  background-color: var(--vs-searchbox-focus-background);
-  box-shadow: var(--vs-searchbox-shadow);
-  width: 280px;
+.vs-input::-webkit-search-cancel-button,
+.vs-input::-webkit-search-decoration,
+.vs-input::-webkit-search-results-button,
+.vs-input::-webkit-search-results-decoration {
+  display: none;
 }
 
-.vs-search-input::-webkit-search-cancel-button,
-.vs-search-input::-webkit-search-decoration,
-.vs-search-input::-webkit-search-results-button,
-.vs-search-input::-webkit-search-results-decoration {
+.vs-magnifier-label {
+  align-items: center;
+  color: var(--vs-highlight-color);
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.vs-magnifier-label svg {
+  height: 24px;
+  width: 24px;
+}
+
+.vs-reset {
+  align-items: center;
+  animation: vs-fade-in 0.1s ease-in forwards;
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  color: var(--vs-highlight-color);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 2px;
+  stroke-width: var(--vs-icon-stroke-width);
+}
+
+.vs-reset[hidden] {
+  display: none;
+}
+
+.vs-reset:focus {
+  outline: none;
+}
+
+.vs-reset:hover {
+  color: var(--vs-highlight-color);
+}
+
+.vs-cancel {
   display: none;
 }
 
 /* ── Dropdown ── */
 
-.vs-search-dropdown {
-  background: var(--vs-dropdown-background);
-  border-radius: 6px;
-  box-shadow: var(--vs-dropdown-shadow);
-  max-height: var(--vs-dropdown-max-height);
+.vs-dropdown {
+  max-height: calc(
+    var(--vs-modal-height)
+    - var(--vs-searchbox-height)
+    - var(--vs-spacing)
+    - var(--vs-footer-height)
+  );
+  min-height: var(--vs-spacing);
   overflow-y: auto;
-  padding: var(--vs-spacing);
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  width: 560px;
-  z-index: 200;
-  scrollbar-color: var(--vs-muted-color) var(--vs-dropdown-background);
+  padding: 0 var(--vs-spacing);
+  scrollbar-color: var(--vs-muted-color) var(--vs-modal-background);
   scrollbar-width: thin;
 }
 
-.vs-search-dropdown::-webkit-scrollbar {
+.vs-dropdown::-webkit-scrollbar {
   width: 12px;
 }
 
-.vs-search-dropdown::-webkit-scrollbar-track {
+.vs-dropdown::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.vs-search-dropdown::-webkit-scrollbar-thumb {
+.vs-dropdown::-webkit-scrollbar-thumb {
   background-color: var(--vs-muted-color);
-  border: 3px solid var(--vs-dropdown-background);
+  border: 3px solid var(--vs-modal-background);
   border-radius: 20px;
 }
 
-/* ── Loading & Empty ── */
+/* ── No Results ── */
 
-.vs-search-loading,
-.vs-search-empty {
+.vs-no-results {
   color: var(--vs-muted-color);
   font-size: 0.9em;
-  padding: 24px 0;
+  margin: 0 auto;
+  padding: 36px 0;
   text-align: center;
+  width: 80%;
 }
 
-.vs-search-loading::after {
-  animation: vs-loading-dots 1.2s infinite;
-  content: '';
-  display: inline-block;
-  width: 1em;
-  text-align: left;
-}
+/* ── Hit Items ── */
 
-@keyframes vs-loading-dots {
-  0%   { content: ''; }
-  25%  { content: '.'; }
-  50%  { content: '..'; }
-  75%  { content: '...'; }
-  100% { content: ''; }
-}
-
-/* ── Result Items ── */
-
-.vs-search-result {
+.vs-hit {
   appearance: none;
-  background: var(--vs-result-background);
+  background: none;
   border: 0;
   border-radius: 4px;
-  box-shadow: var(--vs-result-shadow);
-  color: var(--vs-result-color);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   font: inherit;
-  gap: 2px;
-  justify-content: center;
-  margin-bottom: 4px;
-  min-height: var(--vs-result-height);
-  padding: 8px var(--vs-spacing);
+  padding: 0 0 4px 0;
+  position: relative;
   text-align: left;
   width: 100%;
 }
 
-.vs-search-result:last-child {
-  margin-bottom: 0;
+.vs-hit-container {
+  align-items: center;
+  background: var(--vs-hit-background);
+  border-radius: 4px;
+  box-shadow: var(--vs-hit-shadow);
+  color: var(--vs-hit-color);
+  display: flex;
+  flex-direction: row;
+  min-height: var(--vs-hit-height);
+  padding: 0 var(--vs-spacing);
+  width: 100%;
 }
 
-.vs-search-result--active,
-.vs-search-result:hover {
-  background-color: var(--vs-result-active-background);
-  color: var(--vs-result-active-color);
+.vs-hit--selected .vs-hit-container {
+  background-color: var(--vs-highlight-color);
 }
 
-.vs-search-result--active .vs-search-result-heading,
-.vs-search-result--active .vs-search-result-version,
-.vs-search-result--active .vs-search-result-snippet,
-.vs-search-result:hover .vs-search-result-heading,
-.vs-search-result:hover .vs-search-result-version,
-.vs-search-result:hover .vs-search-result-snippet {
-  color: rgba(255, 255, 255, 0.85);
+.vs-hit--selected .vs-hit-title,
+.vs-hit--selected .vs-hit-heading,
+.vs-hit--selected .vs-hit-path,
+.vs-hit--selected .vs-hit-action,
+.vs-hit--selected .vs-hit-version {
+  color: var(--vs-hit-active-color) !important;
 }
 
-/* ── Result Content ── */
+.vs-hit-content-wrapper {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  font-weight: 500;
+  justify-content: center;
+  line-height: 1.2em;
+  margin: 0 8px;
+  overflow-x: hidden;
+  position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 80%;
+}
 
-.vs-search-result-title {
+.vs-hit-title {
   font-size: 0.9em;
-  font-weight: 600;
-  line-height: 1.3;
+}
+
+.vs-hit-heading {
+  color: var(--vs-muted-color);
+  font-weight: 400;
+}
+
+.vs-hit-path {
+  color: var(--vs-muted-color);
+  font-size: 0.75em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.vs-search-result-heading {
-  color: var(--vs-muted-color);
-  font-weight: 400;
-}
-
-.vs-search-result-version {
+.vs-hit-version {
   background: var(--vs-key-gradient);
   border-radius: 3px;
   box-shadow: var(--vs-key-shadow);
   color: var(--vs-muted-color);
-  display: inline-block;
-  font-size: 0.7em;
+  flex-shrink: 0;
+  font-size: 0.65em;
   line-height: 1;
-  margin-top: 2px;
+  margin-left: 8px;
   padding: 2px 6px;
-  width: fit-content;
 }
 
-.vs-search-result-snippet {
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+.vs-hit-action {
+  align-items: center;
   color: var(--vs-muted-color);
-  display: -webkit-box;
-  font-size: 0.8em;
-  line-height: 1.4;
-  overflow: hidden;
+  display: flex;
+  height: 22px;
+  stroke-width: var(--vs-icon-stroke-width);
+  width: 22px;
+}
+
+.vs-hit-action svg {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
+svg.vs-hit-select-icon {
+  display: none;
+}
+
+.vs-hit--selected .vs-hit-select-icon {
+  display: block;
+}
+
+/* ── Hits Footer ── */
+
+.vs-hits-footer {
+  color: var(--vs-muted-color);
+  display: flex;
+  font-size: 0.85em;
+  justify-content: center;
+  margin-bottom: var(--vs-spacing);
+  padding: var(--vs-spacing);
+}
+
+.vs-see-all {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid;
+  color: var(--vs-highlight-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1em;
+  padding: 0;
+}
+
+.vs-see-all:hover {
+  color: var(--vs-primary-color);
+}
+
+/* ── Footer ── */
+
+.vs-footer {
+  align-items: center;
+  background: var(--vs-footer-background);
+  border-radius: 0 0 8px 8px;
+  box-shadow: var(--vs-footer-shadow);
+  display: flex;
+  flex-direction: row-reverse;
+  flex-shrink: 0;
+  height: var(--vs-footer-height);
+  justify-content: space-between;
+  padding: 0 var(--vs-spacing);
+  position: relative;
+  user-select: none;
+  width: 100%;
+  z-index: 300;
+}
+
+.vs-logo a {
+  display: flex;
+  align-items: center;
+}
+
+.vs-logo svg {
+  color: var(--vs-logo-color);
+  margin-left: 8px;
+}
+
+.vs-label {
+  color: var(--vs-muted-color);
+  font-size: 0.75em;
+  line-height: 1.6em;
+}
+
+.vs-commands {
+  color: var(--vs-muted-color);
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vs-commands li {
+  align-items: center;
+  display: flex;
+}
+
+.vs-commands li:not(:last-of-type) {
+  margin-right: 0.8em;
+}
+
+.vs-commands-key {
+  align-items: center;
+  background: var(--vs-key-gradient);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: var(--vs-key-shadow);
+  color: var(--vs-muted-color);
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin-right: 0.4em;
+  padding: 0 0 1px 0;
+  width: 20px;
 }
 
 /* ── Responsive ── */
@@ -262,47 +551,79 @@ html[data-theme='dark'] {
 @media (max-width: 750px) {
   :root {
     --vs-spacing: 10px;
+    --vs-footer-height: 40px;
   }
 
-  .vs-search-input {
-    width: 36px;
-    padding: 0;
-    background-position: center;
-    color: transparent;
-    cursor: pointer;
+  .vs-dropdown {
+    height: 100%;
   }
 
-  .vs-search-input::placeholder {
-    color: transparent;
+  .vs-dialog[open] {
+    align-items: stretch;
   }
 
-  .vs-search-input:focus {
-    color: var(--vs-text-color);
-    cursor: text;
-    padding: 0 12px 0 36px;
-    width: 200px;
-    background-position: 12px center;
+  .vs-footer {
+    border-radius: 0;
+    bottom: 0;
+    position: absolute;
   }
 
-  .vs-search-input:focus::placeholder {
-    color: var(--vs-muted-color);
+  .vs-hit-content-wrapper {
+    display: flex;
+    position: relative;
+    width: 80%;
   }
 
-  .vs-search-dropdown {
-    left: auto;
-    max-width: calc(100vw - 24px);
-    position: fixed;
-    right: 12px;
-    top: 60px;
+  .vs-modal {
+    border-radius: 0;
+    box-shadow: none;
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: calc(var(--vs-vh, 1vh) * 100);
+    margin: 0;
+    max-width: 100%;
     width: 100%;
+  }
+
+  .vs-dropdown {
+    max-height: calc(
+      var(--vs-vh, 1vh) * 100
+      - var(--vs-searchbox-height)
+      - var(--vs-spacing)
+      - var(--vs-footer-height)
+    );
+  }
+
+  .vs-cancel {
+    appearance: none;
+    background: none;
+    border: 0;
+    color: var(--vs-highlight-color);
+    cursor: pointer;
+    display: inline-block;
+    flex: none;
+    font: inherit;
+    font-size: 1em;
+    font-weight: 500;
+    margin-left: var(--vs-spacing);
+    outline: none;
+    overflow: hidden;
+    padding: 0;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .vs-commands {
+    display: none;
+  }
+
+  .vs-button-keys,
+  .vs-button-placeholder {
+    display: none;
   }
 }
 
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+@keyframes vs-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
