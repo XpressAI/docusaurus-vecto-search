@@ -144,7 +144,7 @@ All configuration lives in `themeConfig.vectorSearch`. Every option has sensible
 | `publicToken` | `string` | `''` | PUBLIC token (read-only, safe to expose in client bundle) |
 | `vectorSpaceId` | `number \| null` | `null` | Your Vecto vector space ID |
 | `clearOnBuild` | `boolean` | `true` | Clear the vector space before re-indexing |
-| `batchSize` | `number` | `50` | Documents per ingest batch |
+| `batchSize` | `number` | `10` | Documents per ingest batch. Increase for faster models (CLIP, OPENAI_V3_SMALL); decrease if you hit gateway timeouts on slower models like QWEN2. |
 
 ### `bm25` — BM25 tuning
 

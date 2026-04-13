@@ -29,7 +29,7 @@ export async function ingestToVecto(
   const vConfig = new Configuration({ accessToken: token });
   const indexApi = new IndexApi(vConfig);
   const updateApi = new UpdateApi(vConfig);
-  const batchSize = config.vecto?.batchSize || 50;
+  const batchSize = config.vecto?.batchSize || 10;
 
   if (config.vecto?.clearOnBuild !== false) {
     console.log("[vector-search] Clearing Vecto vector space...");
@@ -76,9 +76,20 @@ export async function ingestToVecto(
       totalIngested += (response as { ids?: number[] }).ids?.length ?? batch.length;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      // Try to extract response body for SDK ResponseError
+      let body = "";
+      const e = err as { response?: { text?: () => Promise<string>; status?: number } };
+      if (e.response?.text) {
+        try {
+          body = `[${e.response.status ?? "?"}] ${await e.response.text()}`;
+        } catch {
+          // ignore
+        }
+      }
       console.error(
         `[vector-search] Batch ${i}-${i + batch.length} failed:`,
-        msg
+        msg,
+        body ? `\n  Response body: ${body}` : ""
       );
     }
 

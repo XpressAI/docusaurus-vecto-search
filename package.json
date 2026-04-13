@@ -18,6 +18,9 @@
     "prepublish": "yarn build"
   },
   "main": "lib/index.js",
+  "bin": {
+    "vector-search-index": "lib/server/indexer-worker.js"
+  },
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
@@ -28,8 +31,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@xpressai/vecto-client": "^0.0.7",
-    "cheerio": "^1.0.0-rc.12",
+    "@xpressai/vecto-client": "^0.0.10",
     "tslib": "^2.4.0"
   },
   "devDependencies": {

@@ -563,10 +563,10 @@
     "@webassemblyjs/ast" "1.14.1"
     "@xtuc/long" "4.2.2"
 
-"@xpressai/vecto-client@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.npmjs.org/@xpressai/vecto-client/-/vecto-client-0.0.7.tgz"
-  integrity sha512-OIFVJUa3I0xrzcBGxsNT+rXkzA/3UdOnFHek8JKe3KxWxK8YSViS8yRMQrNE158tE78Bm3bjhkQvvEYAqNdO/A==
+"@xpressai/vecto-client@^0.0.10":
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/@xpressai/vecto-client/-/vecto-client-0.0.10.tgz#7ad85eb61d8a65360df9ead34a1c9b687c99a6e7"
+  integrity sha512-TXZO6nGcLGgLUA16NyK5YurqXpIDn44CXg9JJ2KNOX2NmAWRVLIsb7hlZzVSMlP53+6XnlZEHduHisnEOc7WCg==
 
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"

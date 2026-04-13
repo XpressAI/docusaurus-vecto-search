@@ -12,6 +12,7 @@
 
 .vs-search-page-form {
   display: flex;
+  width: 100%;
 }
 
 .vs-search-page-input {
@@ -85,6 +86,7 @@
 .vs-search-page-result-snippet {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   color: var(--ifm-color-emphasis-700, #444);
   display: -webkit-box;
   font-size: 0.875rem;
