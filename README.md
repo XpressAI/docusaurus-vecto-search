@@ -12,182 +12,83 @@
 
 <br>
 
-# @xpressai/docusaurus-vecto-search
-
-A drop-in search plugin for [Docusaurus v2/v3](https://docusaurus.io/) that combines **keyword search** (BM25) with **AI-powered vector search** ([Vecto.ai](https://www.vecto.ai/)) — or use either one on its own.
+# Docusaurus Vecto Search
+Welcome to the Docusaurus Vecto Search repository! This plugin provides Vecto-powered search for your Docusaurus website, with support for **BM25** keyword search, **Vecto.ai** vector search, and **hybrid** mode that combines both using Reciprocal Rank Fusion.
 
 <p align="center">
 <img src="https://docs.vecto.ai/img/docs/integrations/docusaurus-vecto-search.png" width="80%"/>
 </p>
 
-## Why this plugin?
 
-| | Keyword only (BM25) | Vector only (Vecto) | **Hybrid** (default) |
-|---|---|---|---|
-| Matches exact terms | Yes | No | Yes |
-| Understands meaning / synonyms | No | Yes | Yes |
-| Needs a Vecto account | No | Yes | Yes |
-| Needs a server | No | No | No |
+## Setup
 
-**Hybrid mode** merges both result sets with [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf), giving you the best of both worlds — exact keyword hits *and* semantic understanding — with zero backend infrastructure.
+Ensure that you have a Docusaurus v2 or v3 project ready. You may also generate a fresh one by:
 
-## Quick Start
+```bash
+npx create-docusaurus@latest my-website classic
+```
 
-### 1. Install
+or 
+```bash
+yarn create docusaurus my-website
+```
+
+Also ensure that you have a Vecto token ready. You may request one [here](https://www.vecto.ai/contactus).
+
+
+#### 1) Install Docusaurus Vecto Search Plugin
+
+Navigate to the root of your Docusaurus project, then install via
 
 ```bash
 npm install @xpressai/docusaurus-vecto-search
-# or
+```
+
+or
+
+```bash
 yarn add @xpressai/docusaurus-vecto-search
 ```
 
-### 2. Add to your Docusaurus config
+#### 2) Update Docusaurus Configuration
+In your `docusaurus.config.js` file, add the plugin to `themes` and configure it via `themeConfig`:
 
-**BM25 only** — no account needed, works out of the box:
-
-```js
+```javascript
 // docusaurus.config.js
 module.exports = {
   themes: ['@xpressai/docusaurus-vecto-search'],
 
   themeConfig: {
     vectorSearch: {
-      mode: 'bm25',
-    },
-  },
-};
-```
-
-**Hybrid** (BM25 + Vecto) — requires a [Vecto](https://www.vecto.ai/) account:
-
-```js
-// docusaurus.config.js
-module.exports = {
-  themes: ['@xpressai/docusaurus-vecto-search'],
-
-  themeConfig: {
-    vectorSearch: {
-      mode: 'hybrid',  // or 'vector' for vector-only
-
+      mode: 'hybrid',  // "bm25" | "vector" | "hybrid"
       vecto: {
         publicToken: process.env.VECTO_PUBLIC_TOKEN ?? '',
-        vectorSpaceId: 123,
+        vectorSpaceId: Number(process.env.VECTO_SPACE_ID ?? '0'),
       },
     },
   },
 };
 ```
 
-### 3. Build your site
+For BM25-only mode (no Vecto account needed), simply use:
 
-```bash
-# BM25-only — just build normally
-npm run build
-
-# Hybrid / Vector — provide your Vecto USAGE token at build time
-VECTO_USER_TOKEN=your_token_here npm run build
+```javascript
+themeConfig: {
+  vectorSearch: {
+    mode: 'bm25',
+  },
+},
 ```
 
-The plugin indexes your content during `docusaurus build` via the `postBuild` hook. No separate indexing step needed.
+For the full list of configs, refer to the [configuration](#configuration-options) section.
 
-### 4. Deploy
+#### 3) Add Vecto User Token To Environment Variables
 
-Deploy your `build/` folder as usual. No server, no API proxy — everything runs in the browser.
+You'll need to set the `VECTO_USER_TOKEN` environment variable for the plugin to ingest content into Vecto during builds. This token is private and is not exposed in the client bundle.
 
-## How It Works
+##### a. For CI/CD (e.g., GitHub Actions)
 
-```
-Build time (Node)                       Runtime (Browser)
-─────────────────                       ──────────────────
-
-docusaurus build                        User types query
-       │                                        │
-   postBuild hook                        useSearchEngine()
-       │                                        │
-  Extract HTML from build/              ┌───────┴────────┐
-  Read <meta docsearch:*> tags          │                │
-  Chunk content by headings             │  BM25          │  Vecto
-  Tag with version + locale             │  (JSON index)  │  (REST API)
-       │                                │                │
-  ┌────┴──────┐                         └───────┬────────┘
-  │           │                                 │
- BM25 JSON   Vecto ingest              Reciprocal Rank Fusion
- (static)    (USAGE token)             Filter by version/locale
-                                                │
-                                           Ranked results
-```
-
-**At build time**, the plugin reads every rendered HTML page, extracts content split by headings, and:
-- Builds a **BM25 JSON index** (written to `build/search-index/`)
-- Ingests chunks into **Vecto** with metadata (version, locale, URL)
-
-**At runtime**, the SearchBar component loads the BM25 index and/or calls the Vecto API directly from the browser using a read-only PUBLIC token. In hybrid mode, results are merged using Reciprocal Rank Fusion (RRF).
-
-## Configuration Reference
-
-All configuration lives in `themeConfig.vectorSearch`. Every option has sensible defaults — you only need to set what you want to change.
-
-### Top-level options
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `mode` | `'bm25' \| 'vector' \| 'hybrid'` | `'hybrid'` | Search mode |
-| `maxResults` | `number` | `10` | Max results returned per search |
-| `hotkey` | `string` | `'mod+k'` | Keyboard shortcut to focus search |
-| `placeholder` | `string` | `'Search docs...'` | Input placeholder text |
-| `indexPath` | `string` | `'search-index'` | Output directory for the BM25 index (relative to build/) |
-
-### `vecto` — Vecto.ai connection
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `publicToken` | `string` | `''` | PUBLIC token (read-only, safe to expose in client bundle) |
-| `vectorSpaceId` | `number \| null` | `null` | Your Vecto vector space ID |
-| `clearOnBuild` | `boolean` | `true` | Clear the vector space before re-indexing |
-| `batchSize` | `number` | `10` | Documents per ingest batch. Increase for faster models (CLIP, OPENAI_V3_SMALL); decrease if you hit gateway timeouts on slower models like QWEN2. |
-
-### `bm25` — BM25 tuning
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `k1` | `number` | `1.5` | Term frequency saturation |
-| `b` | `number` | `0.75` | Document length normalization |
-
-### `rrf` — Reciprocal Rank Fusion
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `k` | `number` | `60` | RRF constant (higher = less weight to top ranks) |
-
-### `weights` — Weighted score fusion (alternative to RRF)
-
-Set this to use weighted score normalization instead of RRF:
-
-```js
-weights: { vector: 0.7, bm25: 0.3 }
-```
-
-### `content` — Chunking
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `chunkSize` | `number` | `500` | Max words per chunk |
-| `chunkOverlap` | `number` | `50` | Overlap between consecutive chunks |
-
-## Token Security
-
-This plugin uses **two separate tokens** with different permissions:
-
-| Token | Where it lives | Permissions | Exposed to users? |
-|---|---|---|---|
-| `VECTO_USER_TOKEN` | Environment variable (CI secrets) | **USAGE** — read + write | **No** — build-time only |
-| `vecto.publicToken` | `themeConfig` (in JS bundle) | **PUBLIC** — read only | **Yes** — safe to expose |
-
-The USAGE token is only used during `docusaurus build` to ingest content into Vecto. It is **never** included in the client bundle.
-
-The PUBLIC token is used at runtime in the browser to perform lookups. It only allows read access.
-
-### Setting up in CI (GitHub Actions)
+If you are deploying your Docusaurus site using a CI/CD service like GitHub Actions, set `VECTO_USER_TOKEN` as an environment variable in your workflow configuration. You can use repository secrets to securely store the token.
 
 ```yaml
 - name: Build
@@ -196,101 +97,102 @@ The PUBLIC token is used at runtime in the browser to perform lookups. It only a
   run: npm run build
 ```
 
-### Setting up locally
+##### b. For Local Development
+
+For local development, you can export the `VECTO_USER_TOKEN` from your terminal:
 
 ```bash
-export VECTO_USER_TOKEN=your_token_here
+export VECTO_USER_TOKEN=your_token_value_here
+```
+
+Alternatively, you can create a `.env` file in the root of your Docusaurus project and add the token there:
+
+```
+VECTO_USER_TOKEN=your_token_value_here
+```
+
+Using a .env file ensures that the token remains set between terminal sessions.
+
+#### 4) Build!
+
+Finally, build your Docusaurus website with the new search configuration:
+
+```bash
 npm run build
 ```
 
-Or create a `.env` file in your project root:
+or 
 
-```
-VECTO_USER_TOKEN=your_token_here
-```
-
-## Version-Aware Search
-
-The plugin is fully version-aware when used with [Docusaurus versioned docs](https://docusaurus.io/docs/versioning) or i18n. It reads the same `<meta>` tags that Docusaurus injects for Algolia:
-
-```html
-<meta name="docsearch:version" content="2.0" />
-<meta name="docsearch:language" content="en" />
-<meta name="docsearch:docusaurus_tag" content="docs-default-2.0" />
+```bash
+yarn build
 ```
 
-At query time, results are automatically filtered to match the user's current version and locale using `useContextualSearchFilters()` from `@docusaurus/theme-common`.
+That's it! Your Docusaurus website should now be set up with the `docusaurus-vecto-search` functionality.
 
-## Customizing Styles
+If you'd like to give it a try, we have implemented the search in the [Vecto Docs](https://docs.vecto.ai/) and at [Xircuits.io](https://xircuits.io/)!
 
-The plugin ships with default styles supporting both light and dark mode. All CSS classes use the `vs-` prefix so they won't conflict with your theme.
+### Configuration Options
 
-To override styles, add a custom stylesheet targeting these classes:
+All configuration lives in `themeConfig.vectorSearch`. Every option has sensible defaults — you only need to set what you want to change.
 
-| Class | Element |
-|---|---|
-| `.vs-search-container` | Outer wrapper |
-| `.vs-search-input-wrapper` | Input container |
-| `.vs-search-input` | The `<input>` element |
-| `.vs-search-dropdown` | Results dropdown panel |
-| `.vs-search-loading` | "Searching..." message |
-| `.vs-search-empty` | "No results" message |
-| `.vs-search-result` | Individual result item |
-| `.vs-search-result--active` | Keyboard-selected / hovered result |
-| `.vs-search-result-title` | Result page title |
-| `.vs-search-result-heading` | Section heading within the page |
-| `.vs-search-result-version` | Version badge |
-| `.vs-search-result-snippet` | Content preview |
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `mode` | `"bm25"` \| `"vector"` \| `"hybrid"` | `"hybrid"` | Search mode |
+| `vecto.publicToken` | string | `""` | The public token for Vecto search (read-only, safe to expose) |
+| `vecto.vectorSpaceId` | number | `null` | The ID of the vector space |
+| `vecto.clearOnBuild` | boolean | `true` | Clear the vector space before re-indexing |
+| `vecto.batchSize` | number | `10` | Documents per ingest batch |
+| `maxResults` | number | `10` | Max results returned per search |
+| `bm25.k1` | number | `1.5` | BM25 term frequency saturation |
+| `bm25.b` | number | `0.75` | BM25 document length normalization |
+| `rrf.k` | number | `60` | RRF fusion constant |
+| `hotkey` | string | `"mod+k"` | Keyboard shortcut to focus search |
+| `placeholder` | string | `"Search docs..."` | Input placeholder text |
 
-## Local Plugin Development
+#### Weighted Score Fusion (alternative to RRF)
 
-1. Clone and install:
+You can use weighted score normalization instead of the default Reciprocal Rank Fusion:
+
+```javascript
+vectorSearch: {
+  mode: 'hybrid',
+  weights: { vector: 0.7, bm25: 0.3 },
+}
+```
+
+
+### Local Plugin Development
+If you would like to modify the current Vecto Search plugin, here are the steps:
+
+1. Clone and install the repository:
    ```bash
    git clone https://github.com/XpressAI/docusaurus-vecto-search
    cd docusaurus-vecto-search
    yarn install
    ```
-
 2. Build the plugin:
    ```bash
    yarn build
    ```
-
-3. Link it into your Docusaurus project:
+3. Create a symbolic link for the project:
    ```bash
-   yarn link                                    # in plugin directory
-   cd /path/to/your-docusaurus-site
-   yarn link @xpressai/docusaurus-vecto-search    # in site directory
+   yarn link
+   ```
+4. In a different directory, create a new Docusaurus website or use an existing one:
+   ```bash
+   yarn create docusaurus my-website
    ```
 
-4. For development with auto-rebuild:
+5. Move into the Docusaurus project directory and link the plugin:
    ```bash
-   yarn start    # watches both server and client files
+   cd my-website
+   yarn install
+   yarn link @xpressai/docusaurus-vecto-search
    ```
-
-## File Structure
-
-```
-src/
-├── index.ts                  # Plugin entry — getThemePath(), postBuild(), validateThemeConfig()
-├── types.ts                  # Shared TypeScript types
-├── server/                   # Node.js — runs at build time only
-│   ├── indexer.ts            # HTML extraction, heading chunking, metadata tagging
-│   ├── bm25-build.ts        # BM25 index builder (outputs JSON)
-│   └── vecto-ingest.ts      # Vecto batch ingestion via IndexApi
-└── theme/SearchBar/          # Browser — bundled by Docusaurus webpack
-    ├── index.tsx             # React SearchBar component
-    ├── styles.css            # Light/dark mode styles
-    ├── useSearchEngine.ts    # Search hook (init, query, filter, fuse)
-    ├── bm25.ts               # Client-side BM25 engine
-    ├── vecto.ts              # Client-side Vecto lookup
-    └── hybrid.ts             # RRF + weighted score fusion
-```
-
-## Live Examples
-
-- [Vecto Docs](https://docs.vecto.ai/)
-- [Xircuits.io](https://xircuits.io/)
+6. Build the Docusaurus project:
+   ```bash
+   yarn build
+   ```
 
 ## License
 
