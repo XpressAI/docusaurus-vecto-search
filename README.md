@@ -13,7 +13,7 @@
 <br>
 
 # Docusaurus Vecto Search
-Welcome to the Docusaurus Vecto Search repository! This plugin will provide a Vecto powered search for your Docusaurus website. 
+Welcome to the Docusaurus Vecto Search repository! This plugin provides Vecto-powered search for your Docusaurus website, with support for **BM25** keyword search, **Vecto.ai** vector search, and **hybrid** mode that combines both using Reciprocal Rank Fusion.
 
 <p align="center">
 <img src="https://docs.vecto.ai/img/docs/integrations/docusaurus-vecto-search.png" width="80%"/>
@@ -22,7 +22,7 @@ Welcome to the Docusaurus Vecto Search repository! This plugin will provide a Ve
 
 ## Setup
 
-Ensure that you have a Docusaurus project ready which is at least 2.4.3 or higher. You may also generate a fresh one by:
+Ensure that you have a Docusaurus v2 or v3 project ready. You may also generate a fresh one by:
 
 ```bash
 npx create-docusaurus@latest my-website classic
@@ -33,13 +33,12 @@ or
 yarn create docusaurus my-website
 ```
 
-Also ensure that you also have a Vecto token ready. You may request one [here](https://www.vecto.ai/contactus).
+Also ensure that you have a Vecto token ready. You may request one [here](https://www.vecto.ai/contactus).
 
 
 #### 1) Install Docusaurus Vecto Search Plugin
 
 Navigate to the root of your Docusaurus project, then install via
-
 
 ```bash
 npm install @xpressai/docusaurus-vecto-search
@@ -47,38 +46,56 @@ npm install @xpressai/docusaurus-vecto-search
 
 or
 
-
 ```bash
 yarn add @xpressai/docusaurus-vecto-search
 ```
 
 #### 2) Update Docusaurus Configuration
-In your `docusaurus.config.js` file, add the following to the `themes` array:
+In your `docusaurus.config.js` file, add the plugin to `themes` and configure it via `themeConfig`:
 
 ```javascript
-themes: [
-      [
-        "@xpressai/docusaurus-vecto-search",
-        /** type {import("@xpressai/docusaurus-vecto-search").PluginOptions} */
-        ({
-          vecto_public_token: "",
-          vector_space_id: 123,
-          top_k: 15,
-          rankBy: "weightedAverage" // recommended
-        }),
-      ],
-]
+// docusaurus.config.js
+module.exports = {
+  themes: ['@xpressai/docusaurus-vecto-search'],
+
+  themeConfig: {
+    vectorSearch: {
+      mode: 'hybrid',  // "bm25" | "vector" | "hybrid"
+      vecto: {
+        publicToken: process.env.VECTO_PUBLIC_TOKEN ?? '',
+        vectorSpaceId: Number(process.env.VECTO_SPACE_ID ?? '0'),
+      },
+    },
+  },
+};
 ```
-Alternatively, you can also set your config to fetch Vecto vars from your ENV using `process.env`, ie `vecto_public_token = process.env.vecto_public_token`.
+
+For BM25-only mode (no Vecto account needed), simply use:
+
+```javascript
+themeConfig: {
+  vectorSearch: {
+    mode: 'bm25',
+  },
+},
+```
+
 For the full list of configs, refer to the [configuration](#configuration-options) section.
 
 #### 3) Add Vecto User Token To Environment Variables
 
-You'll need to set the `VECTO_USER_TOKEN` environment variable for the `docusaurus-vecto-search` plugin to function properly. This token is private and is not exposed during the Docusaurus build process as it is not added in the docusaurus config.
+You'll need to set the `VECTO_USER_TOKEN` environment variable for the plugin to ingest content into Vecto during builds. This token is private and is not exposed in the client bundle.
 
 ##### a. For CI/CD (e.g., GitHub Actions)
 
 If you are deploying your Docusaurus site using a CI/CD service like GitHub Actions, set `VECTO_USER_TOKEN` as an environment variable in your workflow configuration. You can use repository secrets to securely store the token.
+
+```yaml
+- name: Build
+  env:
+    VECTO_USER_TOKEN: ${{ secrets.VECTO_USER_TOKEN }}
+  run: npm run build
+```
 
 ##### b. For Local Development
 
@@ -110,27 +127,38 @@ or
 yarn build
 ```
 
-
 That's it! Your Docusaurus website should now be set up with the `docusaurus-vecto-search` functionality.
 
-If you'd like to give it a try, we have implemented the search in the [vecto docs]([docs.vecto.ai](https://docs.vecto.ai/)) and at [Xircuits.io](https://xircuits.io/)!
+If you'd like to give it a try, we have implemented the search in the [Vecto Docs](https://docs.vecto.ai/) and at [Xircuits.io](https://xircuits.io/)!
 
 ### Configuration Options
 
-The following are the parameters that you can adjust in your `docusaurus.config.js`.
+All configuration lives in `themeConfig.vectorSearch`. Every option has sensible defaults — you only need to set what you want to change.
 
-| Option              | Type   | Description                                                         |
-|---------------------|--------|---------------------------------------------------------------------|
-| `vecto_public_token` | string | The public token for Vecto search authentication.                  |
-| `vector_space_id`   | number | The ID of the vector space for search.                              |
-| `top_k`             | number | Number of search results to return. Default: 10                     |
-| `rankBy`            | string | Method for ranking and aggregating results. Optional                |
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `mode` | `"bm25"` \| `"vector"` \| `"hybrid"` | `"hybrid"` | Search mode |
+| `vecto.publicToken` | string | `""` | The public token for Vecto search (read-only, safe to expose) |
+| `vecto.vectorSpaceId` | number | `null` | The ID of the vector space |
+| `vecto.clearOnBuild` | boolean | `true` | Clear the vector space before re-indexing |
+| `vecto.batchSize` | number | `10` | Documents per ingest batch |
+| `maxResults` | number | `10` | Max results returned per search |
+| `bm25.k1` | number | `1.5` | BM25 term frequency saturation |
+| `bm25.b` | number | `0.75` | BM25 document length normalization |
+| `rrf.k` | number | `60` | RRF fusion constant |
+| `hotkey` | string | `"mod+k"` | Keyboard shortcut to focus search |
+| `placeholder` | string | `"Search docs..."` | Input placeholder text |
 
-#### rankBy Options:
-If not set, the default behavior is to return results sorted by highest similarity without any aggregation.
-- `"averageByURL"`: Groups results by URL and averages similarity scores.
-- `"countByURL"`: Groups results by URL, ranks by result count per URL.
-- `"weightedAverageByURL"`: Groups results by URL, calculates weighted average of similarity scores.
+#### Weighted Score Fusion (alternative to RRF)
+
+You can use weighted score normalization instead of the default Reciprocal Rank Fusion:
+
+```javascript
+vectorSearch: {
+  mode: 'hybrid',
+  weights: { vector: 0.7, bm25: 0.3 },
+}
+```
 
 
 ### Local Plugin Development
@@ -142,23 +170,23 @@ If you would like to modify the current Vecto Search plugin, here are the steps:
    cd docusaurus-vecto-search
    yarn install
    ```
-2. Create a symbolic link for the project:
+2. Build the plugin:
+   ```bash
+   yarn build
+   ```
+3. Create a symbolic link for the project:
    ```bash
    yarn link
    ```
-3. In a different directory, create a new Docusaurus website (ensure you're using version 2.4.3 or newer).
+4. In a different directory, create a new Docusaurus website or use an existing one:
    ```bash
    yarn create docusaurus my-website
    ```
-   You can also use an existing Docusaurus project, but ensure it's a recent version.
- 
-4. Move into the Docusaurus project directory and install its dependencies:
+
+5. Move into the Docusaurus project directory and link the plugin:
    ```bash
    cd my-website
    yarn install
-   ```
-5. Link the previously linked `docusaurus-vecto-search` to this Docusaurus project:
-   ```bash
    yarn link @xpressai/docusaurus-vecto-search
    ```
 6. Build the Docusaurus project:
@@ -166,6 +194,6 @@ If you would like to modify the current Vecto Search plugin, here are the steps:
    yarn build
    ```
 
-# Special Thanks
-Forked from [Docusaurus Search Local](https://github.com/easyops-cn/docusaurus-search-local).
+## License
 
+MIT

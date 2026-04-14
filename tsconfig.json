@@ -1,21 +1,20 @@
 {
   "compilerOptions": {
-    "declaration": false,
-    "declarationMap": false,
+    "strict": true,
     "esModuleInterop": true,
-    "importHelpers": true,
-    "jsx": "preserve",
-    // moduleResolution and module are required because Docusaurus uses 'exports' in its package.json
-    // See here for more information: https://github.com/microsoft/TypeScript/issues/33079#issuecomment-1169377037
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "moduleResolution": "Node16",
     "module": "Node16",
-    "outDir": "dist",
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "sourceMap": false,
-    "strict": true,
+    "jsx": "react-jsx",
+    "outDir": "lib",
+    "rootDir": "src",
     "types": ["node", "@docusaurus/module-type-aliases"]
   },
   "include": ["src"],
-  "exclude": ["**/*.spec.ts"]
+  "exclude": ["src/theme/**/*"]
 }

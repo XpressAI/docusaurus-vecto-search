@@ -1,220 +1,188 @@
-export interface PluginOptions {
-  /**
-   * Whether to index docs.
-   *
-   * @default true
-   */
-  indexDocs?: boolean;
+import path from "path";
+import fs from "fs";
+import type { LoadContext, Plugin } from "@docusaurus/types";
+import type { ThemeConfig } from "@docusaurus/types";
+import { normalizeUrl } from "@docusaurus/utils";
+import { indexSite } from "./server/indexer";
+import type { DocMeta } from "./server/indexer";
+import type { VectorSearchConfig } from "./types";
 
-  /**
-   * Whether to index blog.
-   *
-   * @default true
-   */
-  indexBlog?: boolean;
+export default function vectorSearchTheme(
+  context: LoadContext,
+  _options: Record<string, unknown>
+): Plugin<void> {
+  const collectedDocs: DocMeta[] = [];
 
-  /**
-   * Whether to index pages.
-   *
-   * @default false
-   */
-  indexPages?: boolean;
+  return {
+    name: "@xpressai/docusaurus-vecto-search",
 
-  /**
-   * Base route path(s) of docs. Slash at beginning is not required.
-   *
-   * Note: for [docs-only mode](https://docusaurus.io/docs/docs-introduction#docs-only-mode),
-   * this needs to be the same as `routeBasePath` in your `@docusaurus/preset-classic` config e.g., `"/"`.
-   *
-   * @default "/docs"
-   */
-  docsRouteBasePath?: string | string[];
+    getThemePath() {
+      return path.resolve(__dirname, "../src/theme");
+    },
 
-  /**
-   * Base route path(s) of blog. Slash at beginning is not required.
-   *
-   * @default "/blog"
-   */
-  blogRouteBasePath?: string | string[];
+    // Register the /search route.
+    async contentLoaded({ actions: { addRoute } }) {
+      addRoute({
+        path: normalizeUrl([context.baseUrl, "search"]),
+        component: "@theme/SearchPage",
+        exact: true,
+      });
+    },
 
-  /**
-   * All [lunr-languages](https://github.com/MihaiValentin/lunr-languages) supported languages, + `zh` 🔥.
-   */
-  language?: string | string[];
+    // Collect doc metadata from all content plugins.
+    // This hook provides allContent — contentLoaded does NOT.
+    async allContentLoaded({ allContent }) {
+      for (const [pluginName, pluginContent] of Object.entries(
+        allContent as Record<string, Record<string, unknown>>
+      )) {
+        if (pluginName.includes("content-docs")) {
+          const versions = pluginContent as Record<
+            string,
+            { loadedVersions?: Array<{ docs?: Array<{
+              title?: string;
+              source?: string;
+              permalink?: string;
+              version?: string;
+            }> }> }
+          >;
+          for (const instance of Object.values(versions)) {
+            for (const ver of instance.loadedVersions ?? []) {
+              for (const doc of ver.docs ?? []) {
+                if (doc.source && doc.permalink) {
+                  collectedDocs.push({
+                    title: doc.title ?? path.basename(doc.permalink),
+                    sourcePath: doc.source.startsWith("@site/")
+                      ? path.resolve(context.siteDir, doc.source.slice(6))
+                      : doc.source,
+                    url: doc.permalink,
+                    version: (doc.version as string) ?? "current",
+                    language: context.i18n?.currentLocale ?? "en",
+                    docusaurusTag: "",
+                  });
+                }
+              }
+            }
+          }
+        }
 
-  /**
-   * Whether to add a hashed query when fetching index (based on the content hash of all indexed
-   * `*.md` in `docsDir` and `blogDir` if applicable). Setting to `"filename"` will save hash in
-   * filename instead of query.
-   *
-   * @default false
-   */
-  hashed?: boolean | "query" | "filename";
+        if (pluginName.includes("content-blog")) {
+          const blogData = pluginContent as Record<
+            string,
+            { blogPosts?: Array<{
+              metadata?: {
+                title?: string;
+                source?: string;
+                permalink?: string;
+              };
+            }> }
+          >;
+          for (const instance of Object.values(blogData)) {
+            for (const post of instance.blogPosts ?? []) {
+              const meta = post.metadata;
+              if (meta?.source && meta?.permalink) {
+                collectedDocs.push({
+                  title: meta.title ?? "",
+                  sourcePath: meta.source.startsWith("@site/")
+                    ? path.resolve(context.siteDir, meta.source.slice(6))
+                    : meta.source,
+                  url: meta.permalink,
+                  version: "current",
+                  language: context.i18n?.currentLocale ?? "en",
+                  docusaurusTag: "",
+                });
+              }
+            }
+          }
+        }
+      }
 
-  /**
-   *  The dir(s) of docs to get the content hash, it's relative to the dir of your project.
-   *
-   * @default "docs"
-   */
-  docsDir?: string | string[];
+      console.log(
+        `[vector-search] Collected ${collectedDocs.length} docs for indexing`
+      );
+    },
 
-  /**
-   * The dir(s) of blog to get the content hash, it's relative to the dir of your project.
-   *
-   * @default "blog"
-   */
-  blogDir?: string | string[];
+    async postBuild({ outDir }) {
+      const config = (
+        context.siteConfig.themeConfig as ThemeConfig & {
+          vectorSearch: VectorSearchConfig;
+        }
+      ).vectorSearch;
 
-  /**
-   * When you're using multi-instance of docs, set the docs plugin id which you'd like to
-   * check the preferred version with, for the search index.
-   */
-  docsPluginIdForPreferredVersion?: string;
+      const indexDir = path.join(outDir, config?.indexPath ?? "search-index");
+      fs.mkdirSync(indexDir, { recursive: true });
 
-  /**
-   * Sometimes people (E.g., us) want to keep the English stop words as indexed, since they
-   * maybe are relevant in programming docs.
-   */
-  removeDefaultStopWordFilter?: boolean;
+      if (collectedDocs.length === 0) {
+        console.warn("[vector-search] No docs collected. Skipping indexing.");
+        return;
+      }
 
-  /**
-   * Enable this if you want to be able to search for any partial word at the cost of search performance.
-   *
-   * @default false
-   */
-  removeDefaultStemmer?: boolean;
+      console.log(
+        `[vector-search] Indexing ${collectedDocs.length} docs (mode: ${config?.mode ?? "hybrid"})...`
+      );
 
-  /**
-   * Highlight search terms on target page.
-   *
-   * @default false
-   */
-  highlightSearchTermsOnTargetPage?: boolean;
+      await indexSite({
+        outDir,
+        docs: collectedDocs,
+        indexDir,
+        config,
+      });
 
-  /**
-   * Limit the search results.
-   *
-   * @default 8
-   */
-  searchResultLimits?: number;
+      console.log(`[vector-search] Index complete → ${indexDir}`);
+    },
+  };
+}
 
-  /**
-   * Set the max length of characters of each search result to show.
-   *
-   * @default 50
-   */
-  searchResultContextMaxLength?: number;
+export function validateThemeConfig({
+  themeConfig,
+  validate,
+}: {
+  themeConfig: ThemeConfig & { vectorSearch?: Partial<VectorSearchConfig> };
+  validate: (schema: unknown, config: unknown) => unknown;
+}): unknown {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Joi = require("joi");
 
-  /**
-   * Whether an explicit path to a heading should be presented on a suggestion template.
-   *
-   * @default false
-   */
-  explicitSearchResultPath?: boolean;
+  const schema = Joi.object({
+    vectorSearch: Joi.object({
+      mode: Joi.string()
+        .valid("bm25", "vector", "hybrid")
+        .default("hybrid"),
 
-  /**
-   * Set the match rules to ignore some routes. Put a string if you want an exact match,
-   * or put a regex if you want a partial match. Note: without the website base url.
-   *
-   * @default []
-   */
-  ignoreFiles?: string | RegExp | (string | RegExp)[];
+      vecto: Joi.object({
+        publicToken: Joi.string().allow("").default(""),
+        vectorSpaceId: Joi.number().integer().allow(null).default(null),
+        clearOnBuild: Joi.boolean().default(true),
+        batchSize: Joi.number().integer().min(1).default(10),
+      }).default(),
 
-  /**
-   * A list of css selectors to ignore when indexing each page.
-   *
-   * @default []
-   */
-  ignoreCssSelectors?: string | string[];
+      bm25: Joi.object({
+        k1: Joi.number().default(1.5),
+        b: Joi.number().default(0.75),
+      }).default(),
 
-  /**
-   * Whether to enable keyboard shortcut to focus in search bar.
-   *
-   * @default true
-   */
-  searchBarShortcut?: boolean;
+      rrf: Joi.object({
+        k: Joi.number().integer().default(60),
+      }).default(),
 
-  /**
-   * Whether to show keyboard shortcut hint in search bar. Disable it if you need to
-   * hide the hint while shortcut is still enabled.
-   *
-   * @default true
-   */
-  searchBarShortcutHint?: boolean;
+      weights: Joi.object({
+        vector: Joi.number().min(0).max(1),
+        bm25: Joi.number().min(0).max(1),
+      })
+        .allow(null)
+        .default(null),
 
-  /**
-   * The side of the navbar the search bar should appear on. By default,
-   * it will try to autodetect based on your docusaurus config according
-   * to [the docs](https://docusaurus.io/docs/api/themes/configuration#navbar-search).
-   *
-   * @default "auto"
-   */
-  searchBarPosition?: "auto" | "left" | "right";
+      maxResults: Joi.number().integer().min(1).default(10),
 
-  /**
-   * Provide your custom dict for language of zh,
-   * [see here](https://github.com/fxsjy/jieba#%E8%BD%BD%E5%85%A5%E8%AF%8D%E5%85%B8)
-   */
-  zhUserDict?: string;
+      content: Joi.object({
+        chunkSize: Joi.number().integer().min(50).default(500),
+        chunkOverlap: Joi.number().integer().min(0).default(50),
+      }).default(),
 
-  /**
-   * Provide the file path to your custom dict for language of zh,
-   * E.g.: `path.resolve("./src/zh-dict.txt")`
-   */
-  zhUserDictPath?: string;
+      hotkey: Joi.string().default("mod+k"),
+      placeholder: Joi.string().default("Search docs..."),
+      indexPath: Joi.string().default("search-index"),
+    }).default(),
+  });
 
-  /**
-   * Provide an list of sub-paths as separate search context, E.g.: `["docs", "community", "legacy/resources"]`.
-   * It will create multiple search indexes by these paths.
-   */
-  searchContextByPaths?: string[];
-
-  /**
-   * Whether to hide the search bar when no search context was matched.
-   *
-   * By default, if `searchContextByPaths` is set, pages which are not matched with it will be considered
-   * as with a search context of ROOT. By setting `hideSearchBarWithNoSearchContext` to false, these pages
-   * will be considered as with NO search context, and the search bar will be hidden.
-   *
-   * @default false
-   */
-  hideSearchBarWithNoSearchContext?: boolean;
-
-  /**
-   * Whether to show results from all the contexts if no context is provided.
-   *
-   * This option should not be used with `hideSearchBarWithNoSearchContext` set to `true` as this would show results
-   * when there is no search context.
-   *
-   * @default false
-   */
-  useAllContextsWithNoSearchContext?: boolean;
-
-  /**
-   * Vecto vector space ID.
-   */
-  vector_space_id?: number;
-
-  /**
-   * Vecto public token. Used for searches.
-   */
-  vecto_public_token?: string;
-
-  /**
-   * Number of vecto search return results.
-   *
-   * @default 10
-   */
-  top_k?: number;
-
-  /**
-   * Vecto search refinement algorithm. 
-   *
-   * "default" - Search results are returned without additional grouping.
-   * "average" - Search results are grouped by URL and ranked by the average score.
-   * "count" - Search results are grouped by URL and ranked by the count of the URL's appearance.
-   *
-   * @default "default"
-   */
-  rankBy?: "default" | "average" | "count" | "weightedAverage";
+  return validate(schema, themeConfig);
 }

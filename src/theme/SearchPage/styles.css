@@ -1,0 +1,151 @@
+.vs-search-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ── Header ── */
+
+.vs-search-page-header {
+  margin-bottom: 2rem;
+}
+
+.vs-search-page-form {
+  display: flex;
+  width: 100%;
+}
+
+.vs-search-page-input {
+  appearance: none;
+  background: var(--ifm-background-surface-color, #fff);
+  border: 2px solid var(--ifm-color-emphasis-300, #dadde1);
+  border-radius: 8px;
+  color: var(--ifm-font-color-base, #1c1e21);
+  font: inherit;
+  font-size: 1.2rem;
+  outline: none;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.vs-search-page-input:focus {
+  border-color: var(--ifm-color-primary, #00D7F2);
+}
+
+.vs-search-page-summary {
+  color: var(--ifm-color-emphasis-600, #666);
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+/* ── Results ── */
+
+.vs-search-page-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vs-search-page-loading,
+.vs-search-page-empty {
+  color: var(--ifm-color-emphasis-600, #666);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.vs-search-page-result {
+  background: var(--ifm-background-surface-color, #fff);
+  border: 1px solid var(--ifm-color-emphasis-200, #ebedf0);
+  border-radius: 8px;
+  color: inherit;
+  display: block;
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.vs-search-page-result:hover {
+  border-color: var(--ifm-color-primary, #00D7F2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  color: inherit;
+}
+
+.vs-search-page-result-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.vs-search-page-result-heading {
+  color: var(--ifm-color-emphasis-600, #666);
+  font-weight: 400;
+}
+
+.vs-search-page-result-snippet {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--ifm-color-emphasis-700, #444);
+  display: -webkit-box;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 0.5rem;
+  overflow: hidden;
+}
+
+.vs-search-page-result-url {
+  color: var(--ifm-color-emphasis-500, #999);
+  font-size: 0.75rem;
+}
+
+/* ── Pagination ── */
+
+.vs-search-page-pagination {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.vs-search-page-pagination-btn {
+  appearance: none;
+  background: var(--ifm-color-primary, #00D7F2);
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+}
+
+.vs-search-page-pagination-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.vs-search-page-pagination-btn:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+.vs-search-page-pagination-info {
+  color: var(--ifm-color-emphasis-600, #666);
+  font-size: 0.875rem;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 576px) {
+  .vs-search-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .vs-search-page-input {
+    font-size: 1rem;
+  }
+}
