@@ -31,8 +31,8 @@ jobs:
           VERSION="${VERSION#v}"
           echo "Publishing version: $VERSION"
           npm version "$VERSION" --no-git-tag-version --allow-same-version
+      - name: Upgrade npm (trusted publishing needs >=11.5.1)
+        run: npm install -g npm@latest
       - run: yarn install --frozen-lockfile
       - run: yarn build
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --access public
