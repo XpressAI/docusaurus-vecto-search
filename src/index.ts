@@ -17,6 +17,10 @@ export default function vectorSearchTheme(
     name: "@xpressai/docusaurus-vecto-search",
 
     getThemePath() {
+      return path.resolve(__dirname, "./theme");
+    },
+
+    getTypeScriptThemePath() {
       return path.resolve(__dirname, "../src/theme");
     },
 
