@@ -22,15 +22,10 @@ Welcome to the Docusaurus Vecto Search repository! This plugin provides Vecto-po
 
 ## Setup
 
-Ensure that you have a Docusaurus v2 or v3 project ready. You may also generate a fresh one by:
+Ensure that you have a Docusaurus v3 project ready. You may also generate a fresh one by:
 
 ```bash
-npx create-docusaurus@latest my-website classic
-```
-
-or 
-```bash
-yarn create docusaurus my-website
+yarn create docusaurus my-website classic
 ```
 
 Also ensure that you have a Vecto token ready. You may request one [here](https://www.vecto.ai/contactus).
@@ -39,12 +34,6 @@ Also ensure that you have a Vecto token ready. You may request one [here](https:
 #### 1) Install Docusaurus Vecto Search Plugin
 
 Navigate to the root of your Docusaurus project, then install via
-
-```bash
-npm install @xpressai/docusaurus-vecto-search
-```
-
-or
 
 ```bash
 yarn add @xpressai/docusaurus-vecto-search
@@ -94,7 +83,7 @@ If you are deploying your Docusaurus site using a CI/CD service like GitHub Acti
 - name: Build
   env:
     VECTO_USER_TOKEN: ${{ secrets.VECTO_USER_TOKEN }}
-  run: npm run build
+  run: yarn build
 ```
 
 ##### b. For Local Development
@@ -116,12 +105,6 @@ Using a .env file ensures that the token remains set between terminal sessions.
 #### 4) Build!
 
 Finally, build your Docusaurus website with the new search configuration:
-
-```bash
-npm run build
-```
-
-or 
 
 ```bash
 yarn build
