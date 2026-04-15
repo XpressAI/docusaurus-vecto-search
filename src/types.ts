@@ -31,6 +31,11 @@ export interface VectorSearchConfig {
   content: {
     chunkSize: number;
     chunkOverlap: number;
+    /**
+     * Heading levels (inclusive range) that start a new chunk.
+     * e.g. [2, 4] splits on ##, ###, ####. Defaults to [2, 4].
+     */
+    splitOnHeadings: [number, number];
   };
 
   hotkey: string;

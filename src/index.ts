@@ -6,6 +6,7 @@ import { normalizeUrl } from "@docusaurus/utils";
 import { indexSite } from "./server/indexer";
 import type { DocMeta } from "./server/indexer";
 import type { VectorSearchConfig } from "./types";
+import type * as JoiTypes from "joi";
 
 export default function vectorSearchTheme(
   context: LoadContext,
@@ -180,6 +181,17 @@ export function validateThemeConfig({
       content: Joi.object({
         chunkSize: Joi.number().integer().min(50).default(500),
         chunkOverlap: Joi.number().integer().min(0).default(50),
+        splitOnHeadings: Joi.array()
+          .length(2)
+          .items(Joi.number().integer().min(1).max(6))
+          .custom((value: number[], helpers: JoiTypes.CustomHelpers<number[]>) =>
+            value[0] <= value[1]
+              ? value
+              : helpers.error("any.invalid", {
+                  message: "splitOnHeadings[0] must be <= splitOnHeadings[1]",
+                })
+          )
+          .default([2, 4]),
       }).default(),
 
       hotkey: Joi.string().default("mod+k"),

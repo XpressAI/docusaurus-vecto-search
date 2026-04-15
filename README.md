@@ -131,6 +131,41 @@ All configuration lives in `themeConfig.vectorSearch`. Every option has sensible
 | `rrf.k` | number | `60` | RRF fusion constant |
 | `hotkey` | string | `"mod+k"` | Keyboard shortcut to focus search |
 | `placeholder` | string | `"Search docs..."` | Input placeholder text |
+| `content.chunkSize` | number | `500` | Max words per chunk before the word-window splitter kicks in |
+| `content.chunkOverlap` | number | `50` | Words shared between consecutive word-window slices |
+| `content.splitOnHeadings` | `[number, number]` | `[2, 4]` | Inclusive range of heading levels that start a new chunk (see below) |
+
+#### Content chunking
+
+Each source markdown page is turned into one or more **chunks** before being fed to BM25 and Vecto. A chunk's `text` field starts with a **breadcrumb** — the chain of ancestor headings from the page title down to the chunk's own heading, rendered as markdown — followed by the section body with its markdown structure (headings, emphasis, lists, blockquotes, code blocks) preserved. MDX-only noise — `import`/`export` lines, JSX/HTML tags, JSX expression braces — is stripped. The splitter runs in two passes:
+
+1. **Heading split** — the page is broken at every heading whose level falls inside `content.splitOnHeadings`. The range `[min, max]` is inclusive on both ends, where `1` is `#` (H1), `2` is `##` (H2), and so on up to `6`. The default `[2, 4]` splits on `##`, `###`, and `####`. Headings outside the range are *not* boundaries — their full heading line and body flow into the enclosing chunk.
+2. **Word-window split** — any section longer than `content.chunkSize` words is sliced into overlapping windows of `chunkSize` words with `chunkOverlap` words of overlap between adjacent slices. Sections shorter than `chunkSize` become a single chunk.
+
+**Examples for `splitOnHeadings`:**
+
+| Value | Behavior |
+|---|---|
+| `[2, 4]` *(default)* | Split on `##`, `###`, `####`. Good balance of chunk specificity and size for typical docs. |
+| `[2, 2]` | Split only on `##`. Keeps all subsections of a section glued together — useful when H3/H4 are used for short sub-points you want retrieved alongside their parent. |
+| `[2, 6]` | Split on every heading from `##` down. Finest-grained chunks; may produce very short chunks on heavily-subdivided pages. |
+| `[1, 6]` | Treat `#` as a boundary too. Rarely useful in Docusaurus because the page title comes from frontmatter, not an inline `#`. |
+| `[3, 4]` | Ignore `##`. An H2 section's intro and its nested H3/H4 subsections become separate chunks, but the H2 heading itself is not used as chunk metadata. |
+
+**Picking a range:**
+- Wider range → finer chunks, more specific `heading` metadata per chunk, better pinpointing — but some chunks may be tiny and lose context.
+- Narrower range → coarser chunks that keep related subsections together. Better for "what does this whole feature do" queries, worse for locating a specific subsection.
+- Regardless of the range, `chunkSize`/`chunkOverlap` will further slice any chunk that exceeds the word limit, so very long sections never become unboundedly large.
+
+```javascript
+vectorSearch: {
+  content: {
+    chunkSize: 500,
+    chunkOverlap: 50,
+    splitOnHeadings: [2, 3],  // split on ## and ###, ignore #### and deeper
+  },
+}
+```
 
 #### Weighted Score Fusion (alternative to RRF)
 
