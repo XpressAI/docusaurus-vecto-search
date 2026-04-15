@@ -35,6 +35,7 @@ export async function indexSite({
   const contentOpts = {
     chunkSize: config.content?.chunkSize ?? 500,
     chunkOverlap: config.content?.chunkOverlap ?? 50,
+    splitOnHeadings: config.content?.splitOnHeadings ?? ([2, 4] as [number, number]),
   };
 
   // ── Extract content from source markdown ──
@@ -113,38 +114,23 @@ function stripFrontmatter(content: string): string {
   return content;
 }
 
-/** Strip markdown/MDX formatting to get plain text. */
-function mdToPlainText(md: string): string {
+/**
+ * Convert MDX source to plain markdown by removing MDX/JSX-only constructs
+ * (imports, JSX tags, expression braces) while preserving heading, emphasis,
+ * list, blockquote, and code structure. The result is suitable for both
+ * retrieval (BM25 strips punctuation at tokenization; embeddings handle
+ * markdown fine) and downstream LLM context.
+ */
+function mdxToMarkdown(md: string): string {
   return (
     md
-      // Remove import/export statements (MDX)
       .replace(/^import\s+.*$/gm, "")
       .replace(/^export\s+.*$/gm, "")
-      // Remove code blocks
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/`[^`]+`/g, "")
-      // Remove images
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-      // Convert links to just text
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-      // Remove multiline JSX/HTML tags (opening, self-closing, closing)
       .replace(/<[a-zA-Z/][\s\S]*?>/g, "")
-      // Remove JSX expression containers
       .replace(/\{[^{}]*\}/g, "")
-      // Remove emphasis markers
-      .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1")
-      // Remove heading markers
-      .replace(/^#{1,6}\s+/gm, "")
-      // Remove blockquotes
-      .replace(/^>\s+/gm, "")
-      // Remove horizontal rules
       .replace(/^[-*_]{3,}\s*$/gm, "")
-      // Remove list markers
-      .replace(/^[\s]*[-*+]\s+/gm, "")
-      .replace(/^[\s]*\d+\.\s+/gm, "")
-      // Collapse whitespace
-      .replace(/\n{2,}/g, "\n")
-      .replace(/[ \t]+/g, " ")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
       .trim()
   );
 }
@@ -152,7 +138,11 @@ function mdToPlainText(md: string): string {
 function extractFromMarkdown(
   content: string,
   doc: DocMeta,
-  contentOpts: { chunkSize: number; chunkOverlap: number }
+  contentOpts: {
+    chunkSize: number;
+    chunkOverlap: number;
+    splitOnHeadings: [number, number];
+  }
 ): DocumentChunk[] {
   const chunks: DocumentChunk[] = [];
   const meta = {
@@ -161,57 +151,60 @@ function extractFromMarkdown(
     docusaurusTag: doc.docusaurusTag,
   };
 
-  // Split by ## and ### headings
-  const sections = content.split(/^(#{2,4}\s+.+)$/m);
+  const [minLvl, maxLvl] = contentOpts.splitOnHeadings;
+  const sectionRegex = new RegExp(
+    `^(#{${minLvl},${maxLvl}}\\s+.+)$`,
+    "m"
+  );
+  const headingRegex = new RegExp(`^(#{${minLvl},${maxLvl}})\\s+(.+)$`);
+  const sections = content.split(sectionRegex);
+
+  const ancestors: Array<{ level: number; line: string }> = [
+    { level: 1, line: `# ${doc.title}` },
+  ];
   let currentHeading = doc.title;
-  let currentText = "";
+  let currentBody = "";
   let sectionIndex = 0;
 
-  for (const part of sections) {
-    const headingMatch = part.match(/^#{2,4}\s+(.+)$/);
-    if (headingMatch) {
-      // Flush current section
-      if (currentText.trim()) {
-        const plain = mdToPlainText(currentText);
-        if (plain) {
-          chunks.push(
-            ...splitIntoChunks(
-              plain,
-              currentHeading,
-              doc.title,
-              doc.url,
-              sectionIndex,
-              contentOpts,
-              meta
-            )
-          );
-          sectionIndex++;
-        }
-      }
-      currentHeading = headingMatch[1].trim();
-      currentText = "";
-    } else {
-      currentText += part;
-    }
-  }
+  const flush = () => {
+    if (!currentBody.trim()) return;
+    const breadcrumb = ancestors.map((a) => a.line).join("\n");
+    const text = mdxToMarkdown(`${breadcrumb}\n\n${currentBody}`);
+    if (!text) return;
+    chunks.push(
+      ...splitIntoChunks(
+        text,
+        currentHeading,
+        doc.title,
+        doc.url,
+        sectionIndex,
+        contentOpts,
+        meta
+      )
+    );
+    sectionIndex++;
+  };
 
-  // Flush last section
-  if (currentText.trim()) {
-    const plain = mdToPlainText(currentText);
-    if (plain) {
-      chunks.push(
-        ...splitIntoChunks(
-          plain,
-          currentHeading,
-          doc.title,
-          doc.url,
-          sectionIndex,
-          contentOpts,
-          meta
-        )
-      );
+  for (const part of sections) {
+    const headingMatch = part.match(headingRegex);
+    if (headingMatch) {
+      flush();
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2].trim();
+      while (
+        ancestors.length &&
+        ancestors[ancestors.length - 1].level >= level
+      ) {
+        ancestors.pop();
+      }
+      ancestors.push({ level, line: part.trim() });
+      currentHeading = headingText;
+      currentBody = "";
+    } else {
+      currentBody += part;
     }
   }
+  flush();
 
   return chunks;
 }
