@@ -1,6 +1,6 @@
 {
   "name": "@xpressai/docusaurus-vecto-search",
-  "version": "1.0.0",
+  "version": "0.1.2",
   "description": "Docusaurus search theme with BM25, Vecto.ai vector search, and hybrid (RRF) modes",
   "repository": {
     "type": "git",
