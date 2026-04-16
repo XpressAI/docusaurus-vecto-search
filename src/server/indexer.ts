@@ -243,8 +243,8 @@ function splitIntoChunks(
   while (start < words.length) {
     const end = Math.min(start + chunkSize, words.length);
     chunks.push(makeChunk(words.slice(start, end).join(" "), partIndex));
+    if (end >= words.length) break;
     start = end - chunkOverlap;
-    if (start >= words.length) break;
     partIndex++;
   }
 
